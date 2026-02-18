@@ -64,7 +64,17 @@ export class LoginPage {
     });
   }
 
-    // Assertions
+  // C669528
+  login_with_right_credential() {
+    cy.fixture('users').then((users: any) => {
+      cy.get(this.emailInput).type(users.validUser.email);
+      cy.get(this.passwordInput).type(users.validUser.password);
+      cy.get(this.loginButton).click();
+      cy.wait(4000);
+    });
+  }
+
+  // Assertions
   shouldShowError(message: string) {
     cy.contains(message).should('be.visible');
     return this;

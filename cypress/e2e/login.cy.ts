@@ -45,7 +45,7 @@ describe('Login Feature', () => {
   });
 
   // C669527 - Wrong credentials blocked
-  it('C669527 - Verify that the user should not be allowed to login wrong user name and password', () => {
+  it('C669527 - Verify that the user should not be allowed to login with wrong user name and password', () => {
     loginPage.login_with_wrong_credential();
     cy.wait(2000);
     
@@ -54,5 +54,12 @@ describe('Login Feature', () => {
     
     // Verify user is still on login page (login failed)
     loginPage.isLoginButtonVisible();
+  });
+
+  // C669528 - Correct credentials allowed
+  it('C669528 - Verify that the user should be allowed to login with correct user name and password.', () => {
+    loginPage.login_with_right_credential();
+    cy.url().should('not.include', '/login');
+    //TODO: cy.contains('Studio Projects').should('be.visible');
   });
 });
