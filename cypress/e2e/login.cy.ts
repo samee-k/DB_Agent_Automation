@@ -43,4 +43,16 @@ describe('Login Feature', () => {
     cy.wait(2000);
     loginPage.shouldShowError('This field is required');
   });
+
+  // C669527 - Wrong credentials blocked
+  it('C669527 - Verify that the user should not be allowed to login wrong user name and password', () => {
+    loginPage.login_with_wrong_credential();
+    cy.wait(2000);
+    
+    // Verify the Toastify error message appears
+    loginPage.shouldShowErrorToast('Invalid Login Credentials.');
+    
+    // Verify user is still on login page (login failed)
+    loginPage.isLoginButtonVisible();
+  });
 });
