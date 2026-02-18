@@ -29,4 +29,18 @@ describe('Login Feature', () => {
   it('C669524 - Verify that the Login button is present on the login page', () => {
     loginPage.isLoginButtonVisible();
   });
+
+  // C669525 - Email field required
+  it('C669525 - Verify that Email field should be required field', () => {
+    loginPage.login_username_required();
+    cy.wait(2000);
+    loginPage.shouldShowError('This field is required');
+  });
+
+  // C669526 - Password field required
+  it('C669526 - Verify that password field should be required field', () => {
+    loginPage.login_password_required();
+    cy.wait(2000);
+    loginPage.shouldShowError('This field is required');
+  });
 });

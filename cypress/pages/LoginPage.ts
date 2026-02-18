@@ -6,6 +6,8 @@ export class LoginPage {
   private readonly emailInput = '#email';
   private readonly passwordInput = '#password';
   private readonly loginButton = 'button[type="submit"]';
+  private readonly loginButtonAlt = 'button.btn.btn-primary.btn-lg > span';
+
 
   // Visit page
   visitPage() {
@@ -39,4 +41,22 @@ export class LoginPage {
     return this;
   }
 
+  //Login actions
+  // C669525 
+  login_username_required() {
+    cy.get(this.loginButtonAlt).click();
+  }
+ // C669526
+  login_password_required() {
+    cy.fixture('users').then((users: any) => {
+      cy.get(this.emailInput).type(users.validUser.email);
+      cy.get(this.loginButtonAlt).click();
+    });
+  }
+
+    // Assertions
+  shouldShowError(message: string) {
+    cy.contains(message).should('be.visible');
+    return this;
+  }
 }
