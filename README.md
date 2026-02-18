@@ -37,10 +37,21 @@ npm run type-check    # Verify TypeScript
 ## Project Structure
 
 ```
-cypress/
-├── e2e/              # Test specifications
-├── fixtures/         # Test data
-└── support/          # Custom commands and configuration
+DB_Agent_Automation/
+├── cypress/
+│   ├── e2e/                        # Test specifications
+│   ├── fixtures/                   # Test data (JSON files)
+│   ├── pages/                      # Page Object Model classes
+│   └── support/
+│       ├── commands.d.ts           # Custom command types
+│       ├── commands.ts             # Custom commands (Reusable Actions)
+│       └── e2e.ts                  # Global configuration
+├── .eslintrc.js                    # Linting rules (Code Quality)
+├── .gitignore                      # Git exclusions
+├── cypress.config.ts               # Cypress config
+├── package.json                    # Dependencies
+├── tsconfig.json                   # TypeScript config (Type Safety)
+└── README.md                       # Documentation
 ```
 
 ## Configuration
