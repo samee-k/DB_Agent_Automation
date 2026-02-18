@@ -14,5 +14,19 @@ describe('Login Feature', () => {
   it('C669521 - Verify that the AI Studio logo and text are present on the login page', () => {
     loginPage.isLogoAndTextVisible();
   });
-  
+
+  // C669522 - Email field presence
+  it('C669522 - Verify that the Email field is present on the login page', () => {
+    loginPage.isEmailFieldVisible();
+  });
+
+  // C669523 - Password field presence
+  it('C669523 - Verify that the Password field is present on the login page', () => {
+    loginPage.isPasswordFieldVisible();
+  });
+
+  // C669524 - Login button presence
+  it('C669524 - Verify that the Login button is present on the login page', () => {
+    loginPage.isLoginButtonVisible();
+  });
 });
