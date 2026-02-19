@@ -79,6 +79,14 @@ export class LoginPage {
   login_with_empty_fields() {
     cy.get(this.loginButtonAlt).click();
   }
+  // C688019
+  login_with_email_spaces(email: string) {
+    cy.fixture('users').then((users: any) => {
+      cy.get(this.emailInput).type(email);
+      cy.get(this.passwordInput).type(users.validUser.password);
+      cy.get(this.loginButton).click();
+    });
+  }
 
   // Individual field actions
   fillPassword(password: string) {

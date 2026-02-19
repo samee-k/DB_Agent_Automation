@@ -44,8 +44,9 @@ describe('Login Feature', () => {
     loginPage.shouldShowError('This field is required');
   });
 
-  // C669527 - Wrong credentials blocked
-  it('C669527 - Verify that the user should not be allowed to login with wrong user name and password', () => {
+  
+  // C669527 - Wrong credentials blocked & Show Invalid Login Credentials.
+  it('C669527 - Verify that the user cannot login with invalid credentials and receives the \'Invalid Login Credentials\' pop-up.', () => {
     loginPage.login_with_wrong_credential();
     cy.wait(2000);
     
@@ -86,4 +87,13 @@ describe('Login Feature', () => {
     loginPage.isPasswordMasked();
   });
 
+  // C688019 - Leading/trailing spaces trimmed
+  it('C688019 - Verify that leading/trailing spaces are trimmed for Email during login', () => {
+    cy.fixture('users').then((users: any) => {
+      const emailWithSpaces = `  ${users.validUser.email}  `;
+      loginPage.login_with_email_spaces(emailWithSpaces);
+      cy.wait(2000);
+      cy.url().should('not.include', '/login');
+    });
+  });
 });
