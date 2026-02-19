@@ -113,4 +113,16 @@ describe('Login Feature', () => {
       });
     });
   });
+
+  // C715141 - Password spaces NOT trimmed
+  it('C715141 - Verify that leading and trailing spaces are NOT trimmed for the Password field', () => {
+    loginPage.login_with_password_spaces();
+    cy.wait(2000);
+    
+    // Login failed, user still on login page and see error message
+    cy.url().should('include', '/login');
+    loginPage.isLoginButtonVisible();
+    loginPage.shouldShowErrorToast('Invalid Login Credentials.');
+  });
+
 });

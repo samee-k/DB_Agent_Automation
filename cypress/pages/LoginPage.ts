@@ -96,6 +96,16 @@ export class LoginPage {
     return this;
   }
 
+  // C715141
+  login_with_password_spaces() {
+    cy.fixture('users').then((users: any) => {
+      const passwordWithSpaces = `  ${users.validUser.password}  `;
+      cy.get(this.emailInput).type(users.validUser.email);
+      cy.get(this.passwordInput).type(passwordWithSpaces);
+      cy.get(this.loginButton).click();
+    });
+  }
+  
   // Individual field actions
   fillPassword(password: string) {
     cy.get(this.passwordInput).clear().type(password);
