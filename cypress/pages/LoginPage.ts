@@ -105,6 +105,14 @@ export class LoginPage {
       cy.get(this.loginButton).click();
     });
   }
+
+  // C715142 - Login with Enter key
+  login_with_enter_key() {
+    cy.fixture('users').then((users: any) => {
+      cy.get(this.emailInput).type(users.validUser.email);
+      cy.get(this.passwordInput).type(users.validUser.password).type('{enter}');
+    });
+  }
   
   // Individual field actions
   fillPassword(password: string) {

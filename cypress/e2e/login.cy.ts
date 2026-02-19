@@ -61,7 +61,7 @@ describe('Login Feature', () => {
   it('C669528 - Verify that the user should be allowed to login with correct user name and password.', () => {
     loginPage.login_with_right_credential();
     cy.url().should('not.include', '/login');
-    //TODO: cy.contains('Studio Projects').should('be.visible');
+    TODO: cy.contains('Studio Projects').should('be.visible');
   });
 
   // C688018 - Validation when both fields empty
@@ -125,4 +125,14 @@ describe('Login Feature', () => {
     loginPage.shouldShowErrorToast('Invalid Login Credentials.');
   });
 
+
+  // C715142 - Login with Enter key
+  it('C715142 - Verify user should be allowed to trigger login action pressing Enter from the password field', () => {
+    loginPage.login_with_enter_key();
+    cy.wait(4000);
+    
+    // Should successfully login (same as clicking button)
+    cy.url().should('not.include', '/login');
+    TODO: cy.contains('Studio Projects').should('be.visible');
+  });
 });
