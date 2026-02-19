@@ -9,7 +9,7 @@ describe('Login Feature', () => {
     loginPage.visitPage();
     cy.wait(2000);
   });
-
+ 
   // C669521 - AI Studio logo and text present
   it('C669521 - Verify that the AI Studio logo and text are present on the login page', () => {
     loginPage.isLogoAndTextVisible();
@@ -94,6 +94,23 @@ describe('Login Feature', () => {
       loginPage.login_with_email_spaces(emailWithSpaces);
       cy.wait(2000);
       cy.url().should('not.include', '/login');
+    });
+  });
+
+  // C715140 - Email format validation and "Invalid email address" error
+  it('C715140 - Verify email field rejects invalid formats (e.g., test@, test.com, no @ symbol) and received "Invalid email address" error. ', () => {
+    cy.fixture('users').then((users: any) => {
+      users.invalidEmailFormats.forEach((invalidEmail: string) => {
+        loginPage.visitPage();
+        cy.wait(1000);
+        
+        loginPage.fillEmailAndAttemptLogin(invalidEmail, 'TestPassword123');
+        cy.wait(2000);
+        
+        // Should still be on login page (invalid email prevented login)
+        loginPage.isLoginButtonVisible();
+        loginPage.shouldShowError('Invalid email address');
+      });
     });
   });
 });

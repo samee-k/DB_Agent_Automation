@@ -10,7 +10,6 @@ export class LoginPage {
   private readonly toastMessage = '.toast__error .text-black';
   private readonly passwordToggle = '.pwd-block button, .password-toggle, [data-cy="toggle-password"]';
 
-
   // Visit page
   visitPage() {
     cy.visit('/');
@@ -79,6 +78,7 @@ export class LoginPage {
   login_with_empty_fields() {
     cy.get(this.loginButtonAlt).click();
   }
+
   // C688019
   login_with_email_spaces(email: string) {
     cy.fixture('users').then((users: any) => {
@@ -86,6 +86,14 @@ export class LoginPage {
       cy.get(this.passwordInput).type(users.validUser.password);
       cy.get(this.loginButton).click();
     });
+  }
+
+  // C715140 - Email validation
+  fillEmailAndAttemptLogin(email: string, password: string) {
+    cy.get(this.emailInput).clear().type(email);
+    cy.get(this.passwordInput).clear().type(password);
+    cy.get(this.loginButton).click();
+    return this;
   }
 
   // Individual field actions
