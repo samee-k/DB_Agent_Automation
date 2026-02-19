@@ -75,4 +75,15 @@ describe('Login Feature', () => {
     loginPage.fillPassword('TestPassword123');
     loginPage.isPasswordMasked();
   });
+
+  // C688017 - Password show/hide toggle
+  it('C688017 - Verify that the Password field has a show/hide (eye) icon and toggles visibility', () => {
+    loginPage.fillPassword('TestPassword123');
+    loginPage.isPasswordMasked();
+    loginPage.togglePasswordVisibility();
+    loginPage.isPasswordVisible();
+    loginPage.togglePasswordVisibility();
+    loginPage.isPasswordMasked();
+  });
+
 });

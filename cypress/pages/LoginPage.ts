@@ -8,6 +8,7 @@ export class LoginPage {
   private readonly loginButton = 'button[type="submit"]';
   private readonly loginButtonAlt = 'button.btn.btn-primary.btn-lg > span';
   private readonly toastMessage = '.toast__error .text-black';
+  private readonly passwordToggle = '.pwd-block button, .password-toggle, [data-cy="toggle-password"]';
 
 
   // Visit page
@@ -88,6 +89,16 @@ export class LoginPage {
   // Password masking and visibility
   isPasswordMasked() {
     cy.get(this.passwordInput).should('have.attr', 'type', 'password');
+    return this;
+  }
+
+  togglePasswordVisibility() {
+    cy.get(this.passwordToggle).click();
+    return this;
+  }
+
+  isPasswordVisible() {
+    cy.get(this.passwordInput).should('have.attr', 'type', 'text');
     return this;
   }
 
