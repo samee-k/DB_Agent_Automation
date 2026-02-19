@@ -79,6 +79,18 @@ export class LoginPage {
     cy.get(this.loginButtonAlt).click();
   }
 
+  // Individual field actions
+  fillPassword(password: string) {
+    cy.get(this.passwordInput).clear().type(password);
+    return this;
+  }
+
+  // Password masking and visibility
+  isPasswordMasked() {
+    cy.get(this.passwordInput).should('have.attr', 'type', 'password');
+    return this;
+  }
+
   // Assertions
   shouldShowError(message: string) {
     cy.contains(message).should('be.visible');

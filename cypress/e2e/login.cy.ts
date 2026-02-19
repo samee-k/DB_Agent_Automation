@@ -69,4 +69,10 @@ describe('Login Feature', () => {
     cy.wait(2000);
     loginPage.shouldShowError('This field is required');
   });
+
+  // C688014 - Password field masked by default
+  it('C688014 - Verify that the Password field masks the entered characters by default', () => {
+    loginPage.fillPassword('TestPassword123');
+    loginPage.isPasswordMasked();
+  });
 });
