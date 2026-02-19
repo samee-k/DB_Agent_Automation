@@ -62,4 +62,11 @@ describe('Login Feature', () => {
     cy.url().should('not.include', '/login');
     //TODO: cy.contains('Studio Projects').should('be.visible');
   });
+
+  // C688018 - Validation when both fields empty
+  it('C688018 - Verify that validation appears when both Email and Password fields are left empty', () => {
+    loginPage.login_with_empty_fields();
+    cy.wait(2000);
+    loginPage.shouldShowError('This field is required');
+  });
 });

@@ -74,6 +74,11 @@ export class LoginPage {
     });
   }
 
+  // C688018
+  login_with_empty_fields() {
+    cy.get(this.loginButtonAlt).click();
+  }
+
   // Assertions
   shouldShowError(message: string) {
     cy.contains(message).should('be.visible');
