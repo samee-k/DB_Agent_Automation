@@ -12,7 +12,7 @@ export class LoginPage {
 
   // Visit page
   visitPage() {
-    cy.visit('/');
+    cy.visit('/login');
   }
 
   // Element visibility checks - C669521
