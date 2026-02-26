@@ -157,20 +157,22 @@ describe('Initial Prompt Options on First Load', { testIsolation: false }, () =>
     page.sendButton().should('be.visible');
   });
 
-  it('C690707 - Verify disclaimer is shown initially and disappears after first response.', () => {
-    cy.contains(page.disclaimer).should('be.visible');
+  it('C690707 - Verify that disclaimer text "*To support informed decisions, please review the information carefully." message is shown below the input field initially and disappears after first response.', () => {
+    page.messageInput().then(($input: JQuery<HTMLElement>) => {
+      cy.contains(page.disclaimer)
+        .should('be.visible')
+        .then(($disclaimer: JQuery<HTMLElement>) => {
+          const inputRect = ($input[0] as HTMLElement).getBoundingClientRect();
+          const disclaimerRect = ($disclaimer[0] as HTMLElement).getBoundingClientRect();
 
-    cy.intercept('POST', page.chatApiRouteMatcher, {
-      statusCode: 200,
-      body: {
-        message: 'Mocked response',
-      },
-    }).as('chatRequest');
+          expect(disclaimerRect.top).to.be.greaterThan(inputRect.bottom - 1);
+        });
+    });
 
     page.typePrompt('Show top 5 tables');
-    page.sendButton().should('be.visible').click();
-    cy.wait('@chatRequest', { timeout: 15000 });
-    cy.contains(page.disclaimer, { timeout: 5000 }).should('not.exist');
+    page.messageInput().should('be.visible').type('{enter}');
+
+    cy.contains(page.disclaimer, { timeout: 30000 }).should('not.exist');
   });
 
   it('C716290 - Verify sidebar navigation icons are visible and correctly aligned.', () => {
