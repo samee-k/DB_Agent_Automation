@@ -13,6 +13,7 @@
   },
   "include": [
     "cypress/**/*.ts",
+    "cypress/**/*.d.ts",
     "cypress.config.ts"
   ],
   "exclude": [
