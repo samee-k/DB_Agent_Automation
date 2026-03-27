@@ -2,7 +2,8 @@ import { defineConfig } from 'cypress';
 
 export default defineConfig({
   e2e: {
-    baseUrl: 'https://talktodbdev.flo.io',
+    // baseUrl: 'https://talktodbdev.flo.io',
+    baseUrl: 'https://devstudio.fuse.ai/',
     specPattern: 'cypress/e2e/**/*.cy.{js,jsx,ts,tsx}',
     supportFile: 'cypress/support/e2e.ts',
     videosFolder: 'cypress/videos',
