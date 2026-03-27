@@ -57,8 +57,8 @@ describe('Login Feature', () => {
     loginPage.isLoginButtonVisible();
   });
 
-  // C669528 - Correct credentials allowed
-  it('C669528 - Verify that the user should be allowed to login with correct user name and password.', () => {
+  // C669528 - Valid credentials allowed
+  it('C669528 - Verify that the user should be allowed to login with Valid Email and Passwordord.', () => {
     loginPage.login_with_right_credential();
     cy.url().should('not.include', '/login');
     TODO: cy.contains('Studio Projects').should('be.visible');
