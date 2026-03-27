@@ -6,9 +6,9 @@ type CardDefinition = {
   title: string;
   description: string;
 };
-
 export class InitialPromptPage {
-  readonly chatPath = '/dbagent/1/chat';
+  // readonly chatPath = '/dbagent/1/chat'; // DB AGent
+  readonly chatPath = '/dbagent/872/chat'; // AI Studio
   readonly chatApiRouteMatcher = '**/dbagent/**/chat**';
   private readonly promptInputSelector = [
     '[data-testid="message-input"]',
