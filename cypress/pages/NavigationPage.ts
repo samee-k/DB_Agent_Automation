@@ -52,11 +52,11 @@ export class NavigationPage {
   }
 
   isNavPaneVisible(): Cypress.Chainable<any> {
-    return cy.get('.menu').should('be.visible');
+    return cy.get(this.navPane).should('be.visible');
   }
 
   isNavPaneHidden(): Cypress.Chainable<any> {
-    return cy.get('.menu').should('not.be.visible');
+    return cy.get(this.navPane).should('not.be.visible');
   }
 
   isMainContentExpanded(): Cypress.Chainable<any> {
@@ -149,24 +149,23 @@ export class NavigationPage {
 
   // Helper: Wait for navigation to complete
   waitForNavigation(): Cypress.Chainable<any> {
-    // Wait for any route changes and URL updates
-    return cy.get('body').should('exist');
+    return cy.location('pathname', { timeout: 30000 }).should('match', /\/dbagent\/\d+\/chat/);
   }
 
   // Check if navigation pane has specific width or state
   getNavPaneWidth(): Cypress.Chainable<number | undefined> {
-    return cy.get('.menu').then(($el: JQuery<HTMLElement>) => {
+    return cy.get(this.navPane).then(($el: JQuery<HTMLElement>) => {
       return $el.width();
     });
   }
 
   // Verify navbar state (expanded/collapsed) by checking nav pane visibility
   isNavBarExpanded(): Cypress.Chainable<any> {
-    return cy.get('.menu').should('be.visible');
+    return cy.get(this.navPane).should('be.visible');
   }
 
   isNavBarCollapsed(): Cypress.Chainable<any> {
-    return cy.get('.menu').should('not.be.visible');
+    return cy.get(this.navPane).should('not.be.visible');
   }
 }
 
