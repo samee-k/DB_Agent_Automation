@@ -62,7 +62,8 @@ describe('Login Feature', () => {
   it('C669528 - Verify that the user should be allowed to login with Valid Email and Password.', () => {
     loginPage.login_with_right_credential();
     cy.url().should('not.include', '/login');
-    TODO: cy.contains('Studio Projects').should('be.visible');
+    cy.location('pathname').should('match', /\/dbagent\/\d+\/chat/);
+    cy.contains(/Welcome to DB Agent|Untitled\s*chat/i).should('be.visible');
   });
 
   // C688018 - Validation when both fields empty
@@ -134,6 +135,7 @@ describe('Login Feature', () => {
     
     // Should successfully login (same as clicking button)
     cy.url().should('not.include', '/login');
-    TODO: cy.contains('Studio Projects').should('be.visible');
+    cy.location('pathname').should('match', /\/dbagent\/\d+\/chat/);
+    cy.contains(/Welcome to DB Agent|Untitled\s*chat/i).should('be.visible');
   });
 });
