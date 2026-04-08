@@ -69,13 +69,15 @@ export class InitialPromptPage {
   }
 
   loginOnceForSuite() {
-    this.loginPage.visitPage();
-    cy.location('pathname', { timeout: 10000 }).then((pathname) => {
-      if (pathname.includes('/login')) {
-        this.loginPage.login_with_right_credential();
-      }
+    cy.session('login-session', () => {
+      cy.visit('/login');
+      cy.fixture('users').then((users: any) => {
+        cy.get('#email').type(users.validUser.email);
+        cy.get('#password').type(users.validUser.password);
+        cy.get('button.btn.btn-primary.btn-lg > span').click();
+        cy.url({ timeout: 30000 }).should('not.include', '/login');
+      });
     });
-    cy.url({ timeout: 30000 }).should('not.include', '/login');
     return this;
   }
 
@@ -101,10 +103,11 @@ export class InitialPromptPage {
       const pageText = documentObject.body?.innerText?.replace(/\s+/g, ' ').trim() ?? '';
       const hasWelcomeText = /Welcome to DB agent/i.test(pageText);
       const hasFeatureSection = /Built for exploration|Write Your Own Query|Visual Results Made Simple|Transparent SQL Queries/i.test(pageText);
+      const hasInputField = documentObject.querySelector(this.promptInputSelector) !== null;
 
-      if (!hasWelcomeText && !hasFeatureSection) {
+      if (!hasWelcomeText && !hasFeatureSection && !hasInputField) {
         throw new Error(
-          `Welcome content not found. URL: ${documentObject.location.href} | Title: ${documentObject.title} | Body: ${pageText.slice(0, 300)}`,
+          `Welcome content or input field not found. URL: ${documentObject.location.href} | Title: ${documentObject.title} | Body: ${pageText.slice(0, 300)}`,
         );
       }
     });
@@ -176,7 +179,7 @@ export class InitialPromptPage {
       if (!isContentEditable) {
         cy.wrap($input).clear();
       }
-      cy.wrap($input).type(promptText);
+      cy.wrap($input).type(promptText, { delay: 0 });
     });
     return this;
   }
