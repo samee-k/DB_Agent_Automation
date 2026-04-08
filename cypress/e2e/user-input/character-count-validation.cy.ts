@@ -1,7 +1,7 @@
 /// <reference types="cypress" />
 
+import { loginBySession } from '../../support/commands';
 import { InitialPromptPage } from '../../pages/InitialPromptPage';
-import { UsersFixture } from '../../support/types/testData';
 
 describe('Character Count and Input Validation Limit', () => {
   const promptPage = new InitialPromptPage();
@@ -49,15 +49,7 @@ describe('Character Count and Input Validation Limit', () => {
 
   // Setup per test for isolation
   beforeEach(() => {
-    cy.session('login-session', () => {
-      cy.visit('/login');
-      cy.fixture('users').then((users: UsersFixture) => {
-        cy.get('#email').type(users.validUser.email);
-        cy.get('#password').type(users.validUser.password);
-        cy.get('button.btn.btn-primary.btn-lg > span').click();
-        cy.url({ timeout: 30000 }).should('not.include', '/login');
-      });
-    });
+    loginBySession();
     promptPage.openChatPage().waitForWelcomeScreen();
     promptPage.clearPrompt();
     // Wait for counter to reset deterministically

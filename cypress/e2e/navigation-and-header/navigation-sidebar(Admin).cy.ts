@@ -1,7 +1,8 @@
 /// <reference types="cypress" />
 
+import { loginBySession } from '../../support/commands';
 import { NavigationPage } from '../../pages/NavigationPage';
-import { MenuItem, UsersFixture } from '../../support/types/testData';
+import { MenuItem } from '../../support/types/testData';
 
 const SELECTORS = {
   menu: '.menu',
@@ -16,16 +17,7 @@ describe('Navigation and Header - Navbar Expand/Collapse and Menu Navigation', (
   const chatPath = Cypress.env('DBAGENT_CHAT_PATH') ?? '/dbagent/872/chat';
 
   beforeEach(() => {
-    cy.session('login-session', () => {
-      cy.visit('/login');
-
-      cy.fixture('users').then((userData: UsersFixture) => {
-        cy.get('#email').type(userData.validUser.email);
-        cy.get('#password').type(userData.validUser.password);
-        cy.get('button.btn.btn-primary.btn-lg > span').click();
-        cy.url({ timeout: 30000 }).should('not.include', '/login');
-      });
-    });
+    loginBySession();
 
     cy.visit(chatPath);
     navigationPage.waitForNavigation();

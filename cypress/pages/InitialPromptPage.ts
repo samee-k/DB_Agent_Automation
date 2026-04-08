@@ -1,6 +1,7 @@
 /// <reference types="cypress" />
 
 import { LoginPage } from './LoginPage';
+import { loginBySession } from '../support/commands';
 
 type CardDefinition = {
   title: string;
@@ -69,15 +70,7 @@ export class InitialPromptPage {
   }
 
   loginOnceForSuite() {
-    cy.session('login-session', () => {
-      cy.visit('/login');
-      cy.fixture('users').then((users: any) => {
-        cy.get('#email').type(users.validUser.email);
-        cy.get('#password').type(users.validUser.password);
-        cy.get('button.btn.btn-primary.btn-lg > span').click();
-        cy.url({ timeout: 30000 }).should('not.include', '/login');
-      });
-    });
+    loginBySession();
     return this;
   }
 
