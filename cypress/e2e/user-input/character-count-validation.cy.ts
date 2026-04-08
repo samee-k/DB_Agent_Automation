@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { InitialPromptPage } from '../pages/InitialPromptPage';
+import { InitialPromptPage } from '../../pages/InitialPromptPage';
 
 describe('Character Count and Input Validation Limit', () => {
   const promptPage = new InitialPromptPage();
