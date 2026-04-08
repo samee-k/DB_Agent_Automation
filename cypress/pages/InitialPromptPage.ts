@@ -70,7 +70,11 @@ export class InitialPromptPage {
 
   loginOnceForSuite() {
     this.loginPage.visitPage();
-    this.loginPage.login_with_right_credential();
+    cy.location('pathname', { timeout: 10000 }).then((pathname) => {
+      if (pathname.includes('/login')) {
+        this.loginPage.login_with_right_credential();
+      }
+    });
     cy.url({ timeout: 30000 }).should('not.include', '/login');
     return this;
   }
