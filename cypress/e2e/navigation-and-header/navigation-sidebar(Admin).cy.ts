@@ -12,7 +12,7 @@ const SELECTORS = {
   navLink: (name: string): string => `a.menu-item:contains("${name}")`
 };
 
-describe('Navigation and Header - Navbar Expand/Collapse and Menu Navigation', () => {
+describe('Navigation and Header', () => {
   const navigationPage = new NavigationPage();
   const chatPath = Cypress.env('DBAGENT_CHAT_PATH') ?? '/dbagent/872/chat';
 
