@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { InitialPromptPage } from '../../pages/InitialPromptPage';
+import { InitialPromptPage } from '../pages/InitialPromptPage';
 
 describe('Free-form Text Input Field Behaviour', { testIsolation: false }, () => {
   const page = new InitialPromptPage();
