@@ -1,7 +1,7 @@
 /// <reference types="cypress" />
 
-import { InitialPromptPage } from '../pages/InitialPromptPage';
-import { SuggestionHelper, SUGGESTION_ITEM_SELECTOR, SUGGESTION_CONTAINER_SELECTOR } from '../pages/SuggestionHelper';
+import { InitialPromptPage } from '../../pages/InitialPromptPage';
+import { SuggestionHelper, SUGGESTION_ITEM_SELECTOR, SUGGESTION_CONTAINER_SELECTOR } from '../../pages/SuggestionHelper';
 
 describe('Click on Suggested Prompt', { testIsolation: false }, () => {
   const page = new InitialPromptPage();
