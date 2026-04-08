@@ -8,7 +8,8 @@ describe('Login Feature', () => {
 
   beforeEach(() => {
     loginPage.visitPage();
-    cy.wait(2000);
+    loginPage.isEmailFieldVisible();
+    loginPage.isPasswordFieldVisible();
   });
  
   // C669521 - AI Studio logo and text present
@@ -34,14 +35,12 @@ describe('Login Feature', () => {
   // C669525 - Email field required
   it('C669525 - Verify that Email field should be required field', () => {
     loginPage.login_username_required();
-    cy.wait(2000);
     loginPage.shouldShowError('This field is required');
   });
 
   // C669526 - Password field required
   it('C669526 - Verify that password field should be required field', () => {
     loginPage.login_password_required();
-    cy.wait(2000);
     loginPage.shouldShowError('This field is required');
   });
 
@@ -49,7 +48,6 @@ describe('Login Feature', () => {
   // C669527 - Wrong credentials blocked & Show Invalid Login Credentials.
   it('C669527 - Verify that the user cannot login with invalid credentials and receives the \'Invalid Login Credentials\' pop-up.', () => {
     loginPage.login_with_wrong_credential();
-    cy.wait(2000);
     
     // Verify the Toastify error message appears
     loginPage.shouldShowErrorToast('Invalid Login Credentials.');
@@ -69,7 +67,6 @@ describe('Login Feature', () => {
   // C688018 - Validation when both fields empty
   it('C688018 - Verify that validation appears when both Email and Password fields are left empty', () => {
     loginPage.login_with_empty_fields();
-    cy.wait(2000);
     loginPage.shouldShowError('This field is required');
   });
 
@@ -94,7 +91,6 @@ describe('Login Feature', () => {
     cy.fixture('users').then((users: UsersFixture) => {
       const emailWithSpaces = `  ${users.validUser.email}  `;
       loginPage.login_with_email_spaces(emailWithSpaces);
-      cy.wait(2000);
       cy.url().should('not.include', '/login');
     });
   });
@@ -104,10 +100,8 @@ describe('Login Feature', () => {
     cy.fixture('users').then((users: UsersFixture) => {
       users.invalidEmailFormats.forEach((invalidEmail: string) => {
         loginPage.visitPage();
-        cy.wait(1000);
         
         loginPage.fillEmailAndAttemptLogin(invalidEmail, 'TestPassword123');
-        cy.wait(2000);
         
         // Should still be on login page (invalid email prevented login)
         loginPage.isLoginButtonVisible();
@@ -119,7 +113,6 @@ describe('Login Feature', () => {
   // C715141 - Password spaces NOT trimmed
   it('C715141 - Verify that leading and trailing spaces are NOT trimmed for the Password field', () => {
     loginPage.login_with_password_spaces();
-    cy.wait(2000);
     
     // Login failed, user still on login page and see error message
     cy.url().should('include', '/login');
@@ -131,7 +124,6 @@ describe('Login Feature', () => {
   // C715142 - Login with Enter key
   it('C715142 - Verify user should be allowed to trigger login action pressing Enter from the password field', () => {
     loginPage.login_with_enter_key();
-    cy.wait(4000);
     
     // Should successfully login (same as clicking button)
     cy.url().should('not.include', '/login');
