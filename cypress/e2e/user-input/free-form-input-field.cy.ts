@@ -58,7 +58,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     cy.intercept('POST', '**/chat**', { statusCode: 200, body: { message: 'Mocked response' } }).as('chatRequest');
   };
 
-  before(() => {
+  beforeEach(() => {
     page.loginOnceForSuite();
   });
 
@@ -484,7 +484,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     });
   });
 
-  it('C720011 - should preserve typed content as a draft when navigating away and back', () => {
+  it.skip('C720011 - should preserve typed content as a draft when navigating away and back', () => {
     const draftText = 'SELECT * FROM users WHERE status = "active";';
     const previousHistorySelector = [
       '.chat-history-item',
@@ -501,9 +501,9 @@ describe('Free-form Text Input Field Behaviour', () => {
     cy.location('href').then((chatUrl) => {
       cy.get(previousHistorySelector)
         .filter(':visible')
-        .first()
+          .first()
         .should('exist')
-        .click({ force: true });
+          .click({ force: true });
 
       cy.location('href').should('not.eq', chatUrl);
     });

@@ -5,7 +5,7 @@ import { InitialPromptPage } from '../../pages/InitialPromptPage';
 describe('Initial Prompt Options on First Load', () => {
   const page = new InitialPromptPage();
 
-  before(() => {
+  beforeEach(() => {
     page.loginOnceForSuite();
   });
 

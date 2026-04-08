@@ -99,6 +99,7 @@ export class SuggestionHelper {
   }
 
   setupTest(): void {
+    this.page.loginOnceForSuite();
     this.page.openChatPage().waitForWelcomeScreen();
     this.page.clearPrompt();
   }

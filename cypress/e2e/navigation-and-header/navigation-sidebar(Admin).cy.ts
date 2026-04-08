@@ -70,13 +70,16 @@ describe('Navigation and Header - Navbar Expand/Collapse and Menu Navigation', (
 
   menuItems.forEach(({ id, name }: MenuItem) => {
     it(`${id} - Verify that clicking on "${name}" navigates to the ${name} section`, () => {
+      const sectionPath = name.toLowerCase();
+
       cy.url().then((initialUrl) => {
         cy.get(SELECTORS.navLink(name)).first().click();
         cy.get(SELECTORS.navLink(name)).first().should('have.class', 'active');
         navigationPage.getSelectedMenuItemLabel().then((selectedLabel: string) => {
           expect(selectedLabel.trim()).to.contain(name);
         });
-        cy.url().should('eq', initialUrl);
+        cy.url().should('not.eq', initialUrl);
+        cy.location('pathname').should('match', new RegExp(`/dbagent/\\d+/${sectionPath}`, 'i'));
       });
     });
   });
