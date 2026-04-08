@@ -1,6 +1,7 @@
 /// <reference types="cypress" />
 
 import { LoginPage } from '../pages/LoginPage';
+import { UsersFixture } from '../support/types/testData';
 
 describe('Login Feature', () => {
   const loginPage = new LoginPage();
@@ -89,7 +90,7 @@ describe('Login Feature', () => {
 
   // C688019 - Leading/trailing spaces trimmed
   it('C688019 - Verify that leading/trailing spaces are trimmed for Email during login', () => {
-    cy.fixture('users').then((users: any) => {
+    cy.fixture('users').then((users: UsersFixture) => {
       const emailWithSpaces = `  ${users.validUser.email}  `;
       loginPage.login_with_email_spaces(emailWithSpaces);
       cy.wait(2000);
@@ -99,7 +100,7 @@ describe('Login Feature', () => {
 
   // C715140 - Email format validation and "Invalid email address" error
   it('C715140 - Verify email field rejects invalid formats (e.g., test@, test.com, no @ symbol) and received "Invalid email address" error. ', () => {
-    cy.fixture('users').then((users: any) => {
+    cy.fixture('users').then((users: UsersFixture) => {
       users.invalidEmailFormats.forEach((invalidEmail: string) => {
         loginPage.visitPage();
         cy.wait(1000);

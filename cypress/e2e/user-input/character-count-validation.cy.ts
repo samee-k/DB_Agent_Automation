@@ -1,6 +1,7 @@
 /// <reference types="cypress" />
 
 import { InitialPromptPage } from '../../pages/InitialPromptPage';
+import { UsersFixture } from '../../support/types/testData';
 
 describe('Character Count and Input Validation Limit', () => {
   const promptPage = new InitialPromptPage();
@@ -50,7 +51,7 @@ describe('Character Count and Input Validation Limit', () => {
   beforeEach(() => {
     cy.session('login-session', () => {
       cy.visit('/login');
-      cy.fixture('users').then((users: any) => {
+      cy.fixture('users').then((users: UsersFixture) => {
         cy.get('#email').type(users.validUser.email);
         cy.get('#password').type(users.validUser.password);
         cy.get('button.btn.btn-primary.btn-lg > span').click();
