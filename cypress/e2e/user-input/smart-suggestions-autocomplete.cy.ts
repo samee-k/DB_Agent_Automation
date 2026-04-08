@@ -3,7 +3,7 @@
 import { InitialPromptPage } from '../../pages/InitialPromptPage';
 import { SuggestionHelper, SUGGESTION_CONTAINER_SELECTOR, SUGGESTION_ITEM_SELECTOR } from '../../pages/SuggestionHelper';
 
-describe('Smart Suggestions / Auto-complete', { testIsolation: false }, () => {
+describe('Smart Suggestions / Auto-complete', () => {
   const page = new InitialPromptPage();
   const sh = new SuggestionHelper(page);
 

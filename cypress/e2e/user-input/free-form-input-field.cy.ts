@@ -2,7 +2,7 @@
 
 import { InitialPromptPage } from '../../pages/InitialPromptPage';
 
-describe('Free-form Text Input Field Behaviour', { testIsolation: false }, () => {
+describe('Free-form Text Input Field Behaviour', () => {
   const page = new InitialPromptPage();
 
   const shortPrompt = 'Show top 5 tables';
