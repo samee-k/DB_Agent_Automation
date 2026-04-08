@@ -34,7 +34,6 @@ describe('Click on Suggested Prompt', { testIsolation: false }, () => {
 
     sh.readInputText().then((beforeHover) => {
       cy.get('@firstSuggestion').trigger('mouseover', { force: true });
-      cy.wait(150);
 
       cy.get('@firstSuggestion').then(($el: JQuery<HTMLElement>) => {
         const bgBefore = window.getComputedStyle($el[0] as HTMLElement).backgroundColor;
