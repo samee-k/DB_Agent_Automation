@@ -8,7 +8,7 @@ type CardDefinition = {
 };
 export class InitialPromptPage {
   // readonly chatPath = '/dbagent/1/chat'; // DB AGent
-  readonly chatPath = '/dbagent/872/chat'; // AI Studio
+  readonly chatPath = Cypress.env('DBAGENT_CHAT_PATH') ?? '/dbagent/872/chat'; // AI Studio
   readonly chatApiRouteMatcher = '**/dbagent/**/chat**';
   private readonly promptInputSelector = [
     '[data-testid="message-input"]',

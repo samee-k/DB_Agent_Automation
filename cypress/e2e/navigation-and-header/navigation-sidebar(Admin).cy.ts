@@ -13,6 +13,7 @@ const SELECTORS = {
 
 describe('Navigation and Header - Navbar Expand/Collapse and Menu Navigation', () => {
   const navigationPage = new NavigationPage();
+  const chatPath = Cypress.env('DBAGENT_CHAT_PATH') ?? '/dbagent/872/chat';
 
   beforeEach(() => {
     cy.session('login-session', () => {
@@ -26,7 +27,7 @@ describe('Navigation and Header - Navbar Expand/Collapse and Menu Navigation', (
       });
     });
 
-    cy.visit('/dbagent/872/chat');
+    cy.visit(chatPath);
     navigationPage.waitForNavigation();
     cy.get(SELECTORS.menu, { timeout: 10000 }).should('exist');
 
