@@ -153,9 +153,9 @@ export class NavigationPage {
   }
 
   // Check if navigation pane has specific width or state
-  getNavPaneWidth(): Cypress.Chainable<number | undefined> {
+  getNavPaneWidth(): Cypress.Chainable<any> {
     return cy.get(this.navPane).then(($el: JQuery<HTMLElement>) => {
-      return $el.width();
+      return $el.width() ?? 0;
     });
   }
 
