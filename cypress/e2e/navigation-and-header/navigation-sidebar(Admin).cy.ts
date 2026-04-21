@@ -14,7 +14,7 @@ const SELECTORS = {
 
 describe('Navigation and Header', () => {
   const navigationPage = new NavigationPage();
-  const chatPath = Cypress.env('DBAGENT_CHAT_PATH') ?? '/dbagent/872/chat';
+  const chatPath = Cypress.env('chatPath') ?? '/dbagent/11/chat';
 
   beforeEach(() => {
     loginBySession();
