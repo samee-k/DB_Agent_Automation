@@ -1,7 +1,7 @@
 {
   "validUser": {
-    "email": "testuser@email.com",
-    "password": "testuser"
+    "email": "__SET_VIA_CYPRESS_USER_EMAIL_ENV__",
+    "password": "__SET_VIA_CYPRESS_USER_PASSWORD_ENV__"
   },
   "invalidUser": {
     "email": "invalid@email.com",
