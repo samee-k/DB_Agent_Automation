@@ -10,6 +10,25 @@ export class LoginPage {
   private readonly toastMessage = '.toast__error .text-black';
   private readonly passwordToggle = '.pwd-block button, .password-toggle, [data-cy="toggle-password"]';
 
+  private isPlaceholderCredential(value: string): boolean {
+    return value.includes('__SET_VIA_CYPRESS_');
+  }
+
+  private getValidCredentials() {
+    return cy.fixture('users').then((users: any) => {
+      const email = String(Cypress.env('USER_EMAIL') || users.validUser.email || '').trim();
+      const password = String(Cypress.env('USER_PASSWORD') || users.validUser.password || '').trim();
+
+      if (!email || !password || this.isPlaceholderCredential(email) || this.isPlaceholderCredential(password)) {
+        throw new Error(
+          'Valid credentials not resolved for LoginPage. Set CYPRESS_USER_EMAIL and CYPRESS_USER_PASSWORD before running tests.',
+        );
+      }
+
+      return { email, password, users };
+    });
+  }
+
   // Visit page
   visitPage() {
     cy.visit('/login');
@@ -49,8 +68,8 @@ export class LoginPage {
   }
   // C669526
   login_password_required() {
-    cy.fixture('users').then((users: any) => {
-      cy.get(this.emailInput).type(users.validUser.email);
+    this.getValidCredentials().then(({ email }) => {
+      cy.get(this.emailInput).type(email);
       cy.get(this.loginButtonAlt).click();
     });
   }
@@ -67,9 +86,9 @@ export class LoginPage {
   // C669528
   login_with_right_credential() {
     cy.visit('/login');
-    cy.fixture('users').then((users: any) => {
-      cy.get(this.emailInput).type(users.validUser.email);
-      cy.get(this.passwordInput).type(users.validUser.password);
+    this.getValidCredentials().then(({ email, password }) => {
+      cy.get(this.emailInput).type(email);
+      cy.get(this.passwordInput).type(password);
       cy.get(this.loginButton).click();
     });
   }
@@ -81,9 +100,9 @@ export class LoginPage {
 
   // C688019
   login_with_email_spaces(email: string) {
-    cy.fixture('users').then((users: any) => {
+    this.getValidCredentials().then(({ password }) => {
       cy.get(this.emailInput).type(email);
-      cy.get(this.passwordInput).type(users.validUser.password);
+      cy.get(this.passwordInput).type(password);
       cy.get(this.loginButton).click();
     });
   }
@@ -98,9 +117,9 @@ export class LoginPage {
 
   // C715141
   login_with_password_spaces() {
-    cy.fixture('users').then((users: any) => {
-      const passwordWithSpaces = `  ${users.validUser.password}  `;
-      cy.get(this.emailInput).type(users.validUser.email);
+    this.getValidCredentials().then(({ email, password }) => {
+      const passwordWithSpaces = `  ${password}  `;
+      cy.get(this.emailInput).type(email);
       cy.get(this.passwordInput).type(passwordWithSpaces);
       cy.get(this.loginButton).click();
     });
@@ -108,9 +127,9 @@ export class LoginPage {
 
   // C715142 - Login with Enter key
   login_with_enter_key() {
-    cy.fixture('users').then((users: any) => {
-      cy.get(this.emailInput).type(users.validUser.email);
-      cy.get(this.passwordInput).type(users.validUser.password).type('{enter}');
+    this.getValidCredentials().then(({ email, password }) => {
+      cy.get(this.emailInput).type(email);
+      cy.get(this.passwordInput).type(password).type('{enter}');
     });
   }
   
