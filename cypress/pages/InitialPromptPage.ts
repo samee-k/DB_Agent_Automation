@@ -8,21 +8,12 @@ type CardDefinition = {
   description: string;
 };
 export class InitialPromptPage {
-  // readonly chatPath = '/dbagent/1/chat'; // DB AGent
-  readonly chatPath = Cypress.env('DBAGENT_CHAT_PATH') ?? '/dbagent/872/chat'; // AI Studio
-  readonly chatApiRouteMatcher = '**/dbagent/**/chat**';
+  readonly chatPath = Cypress.env('chatPath') ?? '/dbagent/11/chat';
+  readonly chatApiRouteMatcher = '**/api/chats/*/send-query';
   private readonly promptInputSelector = [
     '[data-testid="message-input"]',
     '[data-testid="chat-input"]',
-    'textarea',
-    'input[placeholder*="Ask"]',
-    'input[placeholder*="ask"]',
-    'input[placeholder*="Type"]',
-    'input[placeholder*="type"]',
-    '[contenteditable="true"]',
-    '[role="textbox"]',
-    '[aria-label*="Ask"]',
-    '[data-placeholder*="Ask"]',
+    '[data-cy="chat-input"]',
     '.ProseMirror',
     '.ql-editor',
   ].join(', ');

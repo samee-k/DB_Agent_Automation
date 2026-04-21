@@ -159,9 +159,10 @@ describe('Initial Prompt Options on First Load', () => {
 
   it('C690707 - Verify that disclaimer text "*To support informed decisions, please review the information carefully." message is shown below the input field initially and disappears after first response.', () => {
     page.messageInput().then(($input: JQuery<HTMLElement>) => {
-      cy.contains(page.disclaimer)
+      cy.get('body')
+        .contains(page.disclaimer)
         .should('be.visible')
-        .then(($disclaimer: JQuery<HTMLElement>) => {
+        .then(($disclaimer) => {
           const inputRect = ($input[0] as HTMLElement).getBoundingClientRect();
           const disclaimerRect = ($disclaimer[0] as HTMLElement).getBoundingClientRect();
 
