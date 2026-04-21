@@ -47,12 +47,13 @@ describe('Login Feature', () => {
   
   // C669527 - Wrong credentials blocked & Show Invalid Login Credentials.
   it('C669527 - Verify that the user cannot login with invalid credentials and receives the \'Invalid Login Credentials\' pop-up.', () => {
-    cy.on('uncaught:exception', (err) => {
-      if (err.message.includes('Request failed with status code 401')) {
+    // Suppress only the known 401 XHR error thrown by the app's HTTP client.
+    // Any other uncaught exception is intentionally left to fail the test.
+    cy.on('uncaught:exception', (err: Error) => {
+      if (/request failed with status code 401/i.test(err.message)) {
         return false;
       }
-
-      return undefined;
+      return true;
     });
 
     loginPage.login_with_wrong_credential();
