@@ -96,11 +96,12 @@ describe('Login Feature', () => {
 
   // C688019 - Leading/trailing spaces trimmed
   it('C688019 - Verify that leading/trailing spaces are trimmed for Email during login', () => {
-    cy.fixture('users').then((users: UsersFixture) => {
-      const emailWithSpaces = `  ${users.validUser.email}  `;
-      loginPage.login_with_email_spaces(emailWithSpaces);
-      cy.url().should('not.include', '/login');
-    });
+    const email = String(Cypress.env('USER_EMAIL') || '').trim();
+    expect(email, 'CYPRESS_USER_EMAIL must be configured').to.not.equal('');
+
+    const emailWithSpaces = `  ${email}  `;
+    loginPage.login_with_email_spaces(emailWithSpaces);
+    cy.url().should('not.include', '/login');
   });
 
   // C715140 - Email format validation and "Invalid email address" error

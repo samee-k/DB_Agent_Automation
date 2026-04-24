@@ -17,10 +17,12 @@ export default defineConfig({
     requestTimeout: 10000,
     responseTimeout: 30000,
     env: {
+      USER_EMAIL: process.env.CYPRESS_USER_EMAIL || process.env.USER_EMAIL || '',
+      USER_PASSWORD: process.env.CYPRESS_USER_PASSWORD || process.env.USER_PASSWORD || '',
       appUrl: process.env.CYPRESS_APP_URL || process.env.CYPRESS_BASE_URL || 'https://devstudio.fuse.ai',
-      apiUrl: process.env.CYPRESS_API_URL || 'https://devstudio.fuse.ai/api',
-      projectId: process.env.CYPRESS_PROJECT_ID || '11',
-      chatPath: process.env.CYPRESS_CHAT_PATH || '/dbagent/11/chat',
+      apiUrl: process.env.CYPRESS_API_URL || 'https://datahub.fuse.ai/api',
+      projectId: process.env.CYPRESS_PROJECT_ID || '810',
+      chatPath: process.env.CYPRESS_CHAT_PATH || '/dbagent/810/chat',
     },
     setupNodeEvents(on, config) {
       return config;
