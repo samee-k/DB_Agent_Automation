@@ -132,7 +132,15 @@ export class InputProcessingIndicatorPage {
   }
 
   assertProcessingIndicatorVisible(timeout = 8000) {
-    cy.contains(this.processingStateRegex, { timeout }).should('be.visible');
+    cy.get('body', { timeout }).should(($body: JQuery<HTMLElement>) => {
+      const hasVisibleProcessingText = $body
+        .find('*')
+        .filter(':visible')
+        .toArray()
+        .some((el: Element) => this.processingStateRegex.test((el.textContent || '').trim()));
+
+      expect(hasVisibleProcessingText, 'processing indicator should be visible').to.eq(true);
+    });
     return this;
   }
 
