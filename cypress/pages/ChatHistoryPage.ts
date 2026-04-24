@@ -399,12 +399,24 @@ export class ChatHistoryPage {
     return cy.get(this.historyToggle).first();
   }
 
-  getPanel() {
-    return cy.get(this.historyPanel).first();
+  getPanel(timeout = 20000) {
+    return cy.get('body', { timeout }).then(($body: JQuery<HTMLElement>) => {
+      const panel = $body.find(this.historyPanel).first();
+      if (panel.length > 0) {
+        return cy.wrap(panel as JQuery<HTMLElement>);
+      }
+
+      const toggle = $body.find(this.historyToggle).filter(':visible').first();
+      if (toggle.length > 0) {
+        cy.wrap(toggle).click({ force: true });
+      }
+
+      return cy.get(this.historyPanel, { timeout }).first();
+    });
   }
 
   waitForPanelVisible(timeout = 15000) {
-    return cy.get(this.historyPanel, { timeout }).first().should(($panel: JQuery<HTMLElement>) => {
+    return this.getPanel(timeout).should(($panel: JQuery<HTMLElement>) => {
       const panel = $panel[0] as HTMLElement;
       const style = window.getComputedStyle(panel);
       const isDisplayed = style.display !== 'none' && style.visibility !== 'hidden';
@@ -431,7 +443,7 @@ export class ChatHistoryPage {
   }
 
   waitForHistoryItemCountAtLeast(minCount: number, timeout = 20000) {
-    return cy.get(this.historyPanel, { timeout }).first().should(($panel: JQuery<HTMLElement>) => {
+    return this.getPanel(timeout).should(($panel: JQuery<HTMLElement>) => {
       const count = $panel.find(this.historyItems).length;
       expect(count, `history items count >= ${minCount}`).to.be.gte(minCount);
     });

@@ -346,26 +346,105 @@ describe('Chat History Panel', () => {
   });
 
   it('C698152 - Verify conversations are grouped under Recent, Last 7 Days, Last 30 Days, and Last 3 Months based on creation time.', () => {
-    // All seeded chats are created today so at minimum a "Today" time-group header should be present.
-    chatHistoryPage.openHistoryPanel();
-    chatHistoryPage.waitForHistoryItemCountAtLeast(1);
+    const projectId = Cypress.env('projectId') || '11';
+    const isoDaysAgo = (daysAgo: number) => {
+      const timestamp = Date.now() - (daysAgo * 24 * 60 * 60 * 1000);
+      return new Date(timestamp).toISOString();
+    };
 
-    // Verify the panel contains at least one time-group label.
-    // The exact label text depends on the app locale/config, "Today" is the most reliable.
-    chatHistoryPage.getPanel().should('be.visible');
-    cy.get('body').then(($body: JQuery<HTMLElement>) => {
-      const headers = $body.find(
-        '[data-cy="chat-history-group-header"], .chat-history-section-title, .chat-history-date-group, .date-group-title'
-      );
-      if (headers.length > 0) {
-        cy.wrap(headers.first()).should('be.visible');
-      } else {
-        // Fallback: panel contains text of a recognisable time label
-        chatHistoryPage.getPanel().invoke('text').should((panelText: string) => {
-          const hasTimeGroup = /today|yesterday|last 7|last 30|last 3|recent/i.test(panelText);
-          expect(hasTimeGroup, 'Panel must contain a time-group label').to.be.true;
-        });
+    const extractList = (body: any): any[] => {
+      if (!body) return [];
+      if (Array.isArray(body)) return body;
+      if (Array.isArray(body?.data)) return body.data;
+      if (Array.isArray(body?.chats)) return body.chats;
+      if (Array.isArray(body?.items)) return body.items;
+      if (Array.isArray(body?.records)) return body.records;
+      if (Array.isArray(body?.data?.chats)) return body.data.chats;
+      if (Array.isArray(body?.data?.items)) return body.data.items;
+      if (Array.isArray(body?.data?.data)) return body.data.data;
+      if (Array.isArray(body?.data?.records)) return body.data.records;
+      return [];
+    };
+
+    const setList = (body: any, nextList: any[]) => {
+      if (!body || Array.isArray(body)) {
+        return { data: { chats: nextList } };
       }
+
+      if (Array.isArray(body?.data)) {
+        body.data = nextList;
+      } else if (Array.isArray(body?.chats)) {
+        body.chats = nextList;
+      } else if (Array.isArray(body?.items)) {
+        body.items = nextList;
+      } else if (Array.isArray(body?.records)) {
+        body.records = nextList;
+      } else if (Array.isArray(body?.data?.chats)) {
+        body.data.chats = nextList;
+      } else if (Array.isArray(body?.data?.items)) {
+        body.data.items = nextList;
+      } else if (Array.isArray(body?.data?.data)) {
+        body.data.data = nextList;
+      } else if (Array.isArray(body?.data?.records)) {
+        body.data.records = nextList;
+      } else {
+        body.data = { ...(body.data || {}), chats: nextList };
+      }
+
+      if (typeof body?.totalrecords === 'number') body.totalrecords = nextList.length;
+      if (typeof body?.totalRecords === 'number') body.totalRecords = nextList.length;
+      if (typeof body?.data?.totalrecords === 'number') body.data.totalrecords = nextList.length;
+      if (typeof body?.data?.totalRecords === 'number') body.data.totalRecords = nextList.length;
+
+      return body;
+    };
+
+    cy.intercept('GET', `**/api/chats/by-project/${projectId}*`, (req) => {
+      req.continue((res) => {
+        const originalList = extractList(res.body);
+        const template = (originalList[0] || {}) as Record<string, unknown>;
+
+        const makeChat = (id: number, title: string, daysAgo: number) => {
+          const iso = isoDaysAgo(daysAgo);
+          return {
+            ...template,
+            id,
+            title,
+            createdAt: iso,
+            created_at: iso,
+            updatedAt: iso,
+            updated_at: iso,
+          };
+        };
+
+        const chatsByAge = [
+          makeChat(900001, 'Recent chat A', 0),
+          makeChat(900002, 'Recent chat B', 1),
+          makeChat(900003, 'Last 7 days chat', 5),
+          makeChat(900004, 'Last 30 days chat', 15),
+          makeChat(900005, 'Last 3 months chat', 65),
+        ];
+
+        res.body = setList(res.body, chatsByAge);
+      });
+    }).as('groupingBuckets');
+
+    chatHistoryPage.visitChatPage();
+    cy.wait('@groupingBuckets').then((interception) => {
+      expect(interception.response?.statusCode).to.eq(200);
+      const injectedList = extractList(interception.response?.body);
+      const injectedTitles = injectedList.map((item: any) => String(item?.title || '').toLowerCase());
+      expect(injectedTitles, 'bucket fixture should be injected into response').to.include('recent chat a');
+    });
+
+    chatHistoryPage.openHistoryPanel();
+    chatHistoryPage.getPanel().should('be.visible').should(($panel: JQuery<HTMLElement>) => {
+      const panelText = ($panel.text() || '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+      expect(panelText, 'contains Recent group').to.include('recent');
+      expect(panelText, 'contains Last 7 Days group').to.include('last 7 days');
+      expect(panelText, 'contains Last 30 Days group').to.include('last 30 days');
+      expect(panelText, 'contains Last 3 Months group').to.include('last 3 months');
     });
   });
 
