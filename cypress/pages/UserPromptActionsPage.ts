@@ -203,17 +203,22 @@ export class UserPromptActionsPage {
 
   // ── Copy action ───────────────────────────────────────────────────────────
 
-  private getScopedActionIcon(selector: string): Cypress.Chainable<JQuery<HTMLElement>> {
+  private getScopedActionIcon(selector: string, requireVisible = true): Cypress.Chainable<JQuery<HTMLElement>> {
     return cy.get('body').then(($body: JQuery<HTMLElement>) => {
       const scopedMessage = $body.find('[data-cy-active-user-message="true"]');
       if (scopedMessage.length > 0) {
-        const scopedIcon = scopedMessage.find(selector).filter(':visible').first();
+        const scopedIcons = scopedMessage.find(selector);
+        const scopedIcon = requireVisible ? scopedIcons.filter(':visible').first() : scopedIcons.first();
         if (scopedIcon.length > 0) {
           return cy.wrap(scopedIcon as JQuery<HTMLElement>);
         }
       }
 
-      return cy.get(selector, { timeout: 10000 }).filter(':visible').first();
+      return cy.get(selector, { timeout: 10000 }).then(($icons: JQuery<HTMLElement>) => {
+        const icon = requireVisible ? $icons.filter(':visible').first() : $icons.first();
+        expect(icon.length, `action icon found for selector: ${selector}`).to.be.greaterThan(0);
+        return cy.wrap(icon as JQuery<HTMLElement>);
+      });
     });
   }
 
@@ -243,11 +248,11 @@ export class UserPromptActionsPage {
   // ── Edit action ───────────────────────────────────────────────────────────
 
   getEditIcon(): Cypress.Chainable<JQuery<HTMLElement>> {
-    return this.getScopedActionIcon(this.editIconSelector);
+    return this.getScopedActionIcon(this.editIconSelector, true);
   }
 
   clickEditIcon() {
-    this.getEditIcon().click({ force: true });
+    this.getScopedActionIcon(this.editIconSelector, false).click({ force: true });
     return this;
   }
 
