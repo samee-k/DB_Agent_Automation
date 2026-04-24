@@ -202,13 +202,17 @@ describe('Click on Suggested Prompt', () => {
 
   it('C689867 - Verify mouse-selected suggestion executes with Enter/Submit without refocusing.', () => {
     sh.stubChatRequest();
-
     sh.openSuggestions('A');
-    sh.getVisibleSuggestions().first().click();
-    page.messageInput().type('{enter}');
 
-    cy.wait('@chatRequest');
+    // Use realClick to simulate a physical mouse click
+    sh.getVisibleSuggestions().first().realClick();
+
+    // If the input isn't focused, nothing will happen in the text box.
+    cy.realPress("Enter");
+
+    cy.wait('@chatRequest', { timeout: 5000 });
   });
+
 
   it('C679717 - Verify sequential clicking multiple suggestions behaves correctly.', () => {
     sh.openSuggestions('A');
