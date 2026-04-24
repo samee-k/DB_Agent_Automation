@@ -8,12 +8,19 @@ type CardDefinition = {
   description: string;
 };
 export class InitialPromptPage {
-  readonly chatPath = Cypress.env('chatPath') ?? '/dbagent/11/chat';
+  readonly chatPath = Cypress.env('chatPath');
   readonly chatApiRouteMatcher = '**/api/chats/*/send-query';
   private readonly promptInputSelector = [
     '[data-testid="message-input"]',
     '[data-testid="chat-input"]',
     '[data-cy="chat-input"]',
+    'textarea.chat-input',
+    'textarea[placeholder*="Ask here"]',
+    '[role="textbox"][placeholder*="Ask here"]',
+    '[role="textbox"]',
+    '[contenteditable="true"]',
+    'textarea.dbagent-textarea',
+    'textarea.form-control',
     '.ProseMirror',
     '.ql-editor',
   ].join(', ');
@@ -120,10 +127,15 @@ export class InitialPromptPage {
 
   messageInput(): Cypress.Chainable<JQuery<HTMLElement>> {
     return cy
-      .get(this.promptInputSelector, { timeout: 20000 })
-      .filter(':visible')
-      .first()
-      .should('exist');
+      .get('body', { timeout: 20000 })
+      .should(($body: JQuery<HTMLElement>) => {
+        const visibleInputs = $body.find(this.promptInputSelector).filter(':visible');
+        expect(visibleInputs.length, 'visible prompt input').to.be.greaterThan(0);
+      })
+      .then(($body: JQuery<HTMLElement>) => {
+        const visibleInputs = $body.find(this.promptInputSelector).filter(':visible');
+        return cy.wrap(visibleInputs.first() as JQuery<HTMLElement>);
+      });
   }
 
   sendButton() {
