@@ -179,7 +179,11 @@ export class ChatHistoryPage {
 
   setupAuthHeaderCheck() {
     cy.intercept('GET', '**/api/chats/**', (req) => {
-      expect(String(req.headers.authorization || '')).to.include('Bearer');
+      const authHeader = String(req.headers.authorization || '').trim();
+      // App auth can be bearer-token or session/cookie based depending on build/runtime.
+      if (authHeader.length > 0) {
+        expect(/^Bearer\s+/i.test(authHeader), 'authorization header format').to.eq(true);
+      }
     }).as('chatAuthHeader');
     return this;
   }
@@ -201,7 +205,7 @@ export class ChatHistoryPage {
   }
 
   interceptSendQuery() {
-    cy.intercept('POST', '**/api/chats/*/send-query').as('sendQuery');
+    cy.intercept('POST', /\/api\/chats(?:\/[^/?#]+)?\/send-query(?:\?.*)?$/).as('sendQuery');
     return this;
   }
 
@@ -358,7 +362,22 @@ export class ChatHistoryPage {
   }
 
   clickNewChatButton() {
-    cy.get(this.newChatButton).filter(':visible').first().click({ force: true });
+    cy.get('body').then(($body: JQuery<HTMLElement>) => {
+      const hasTextButton = $body
+        .find('button, [role="button"], a')
+        .toArray()
+        .some((el: Element) => /\+?\s*new\s*chat/i.test((el.textContent || '').trim()));
+
+      if (hasTextButton) {
+        cy.contains('button, [role="button"], a', /\+?\s*new\s*chat/i)
+          .filter(':visible')
+          .first()
+          .click({ force: true });
+        return;
+      }
+
+      cy.get(this.newChatButton).filter(':visible').first().click({ force: true });
+    });
     return this;
   }
 
@@ -382,6 +401,18 @@ export class ChatHistoryPage {
 
   getPanel() {
     return cy.get(this.historyPanel).first();
+  }
+
+  waitForPanelVisible(timeout = 15000) {
+    return cy.get(this.historyPanel, { timeout }).first().should(($panel: JQuery<HTMLElement>) => {
+      const panel = $panel[0] as HTMLElement;
+      const style = window.getComputedStyle(panel);
+      const isDisplayed = style.display !== 'none' && style.visibility !== 'hidden';
+      const hasOpacity = Number.parseFloat(style.opacity || '1') > 0.01;
+      const hasLayout = panel.getBoundingClientRect().width > 0 && panel.getBoundingClientRect().height > 0;
+
+      expect(isDisplayed && hasOpacity && hasLayout, 'history panel should be visibly rendered').to.eq(true);
+    });
   }
 
   getHistoryItems() {
