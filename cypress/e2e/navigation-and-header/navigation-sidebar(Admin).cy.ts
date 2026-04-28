@@ -1,6 +1,5 @@
 /// <reference types="cypress" />
 
-import { loginBySession } from '../../support/commands';
 import { NavigationPage } from '../../pages/NavigationPage';
 import { MenuItem } from '../../support/types/testData';
 
@@ -17,7 +16,7 @@ describe('Navigation and Header', () => {
   const chatPath = Cypress.env('chatPath') ?? '/dbagent/11/chat';
 
   beforeEach(() => {
-    loginBySession();
+    cy.loginBySession();
 
     cy.visit(chatPath);
     navigationPage.waitForNavigation();

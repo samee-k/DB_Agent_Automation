@@ -1,7 +1,6 @@
 /// <reference types="cypress" />
 
 import { ChatHistoryPage } from '../../pages/ChatHistoryPage';
-import { clearChatsByProjectViaApi, seedChatsByProjectViaApiIfEmpty } from '../../support/commands';
 
 describe('Action (Delete)', () => {
   const chatHistoryPage = new ChatHistoryPage();
@@ -17,7 +16,7 @@ describe('Action (Delete)', () => {
     chatHistoryPage.visitChatPage();
     cy.wait('@getChatsByProject').its('response.statusCode').should('eq', 200);
 
-    seedChatsByProjectViaApiIfEmpty(5, 20);
+    cy.seedChatsByProjectViaApiIfEmpty(5, 20);
     chatHistoryPage.interceptGetChatsByProject();
     chatHistoryPage.visitChatPage();
     cy.wait('@getChatsByProject').its('response.statusCode').should('eq', 200);
@@ -99,8 +98,8 @@ describe('Action (Delete)', () => {
 
   it('C775313 - Verify deleting all existing history shows No Conversation History.', () => {
     // Clear all via API then seed exactly 1 item so the UI test only needs
-    clearChatsByProjectViaApi();
-    seedChatsByProjectViaApiIfEmpty(1, 5);
+    cy.clearChatsByProjectViaApi();
+    cy.seedChatsByProjectViaApiIfEmpty(1, 5);
 
     chatHistoryPage.interceptDeleteChat();
     chatHistoryPage.visitChatPage();

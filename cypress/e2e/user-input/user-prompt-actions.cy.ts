@@ -9,7 +9,7 @@ describe('User Prompt Actions - Copy and Edit', () => {
   beforeEach(() => {
     page.loginOnceForSuite();
     page.openChatPage().waitForWelcomeScreen();
-    page.sendPromptAndWait(basePrompt);
+    page.sendPromptAndEnsureUserMessage(basePrompt);
   });
 
   // ── Hover icon visibility ──────────────────────────────────────────────────
@@ -108,7 +108,7 @@ describe('User Prompt Actions - Copy and Edit', () => {
     it('C779791 - Verify that Edit Mode UI disappears and returns to standard input state after successful save or cancel', () => {
       const savedPrompt = 'Edited prompt for save-flow verification';
 
-      cy.intercept({ method: 'POST', url: page.sendQueryRoute }, { statusCode: 200, body: { message: 'saved' } }).as('editSaveFlow');
+      cy.intercept({ method: 'POST', url: page.sendQueryRoute }, { statusCode: 200, body: {} }).as('editSave');
 
       // Save flow should close edit mode and update prompt text.
       page.hoverUserMessageContaining(basePrompt);
@@ -116,10 +116,10 @@ describe('User Prompt Actions - Copy and Edit', () => {
       page.assertEditModeLabelVisible();
       page.clearAndTypeInEditArea(savedPrompt);
       page.saveEdit();
+      cy.wait('@editSave');
 
-      cy.wait('@editSaveFlow').its('response.statusCode').should('eq', 200);
+      page.getUserMessageContaining(savedPrompt, 10000).should('be.visible');
       page.assertEditModeLabelNotVisible();
-      page.assertUserMessageContains(savedPrompt);
 
       // Cancel flow should close edit mode without applying the attempted change.
       page.hoverUserMessageContaining(savedPrompt);
@@ -129,11 +129,11 @@ describe('User Prompt Actions - Copy and Edit', () => {
       page.cancelEdit();
 
       page.assertEditModeLabelNotVisible();
-      page.assertUserMessageContains(savedPrompt);
+      page.getUserMessageContaining(savedPrompt, 10000).should('be.visible');
     });
 
     it('C690719 - Verify that the user can modify the existing prompt and save changes clicking on the edit icon', () => {
-      cy.intercept({ method: 'POST', url: page.sendQueryRoute }, { statusCode: 200, body: { message: 'Response for edited prompt' } }).as('editSendQuery');
+      cy.intercept({ method: 'POST', url: page.sendQueryRoute }, { statusCode: 200, body: {} }).as('editSave');
 
       page.hoverUserMessageContaining(basePrompt);
       page.clickEditIcon();
@@ -141,9 +141,9 @@ describe('User Prompt Actions - Copy and Edit', () => {
 
       page.clearAndTypeInEditArea('Updated prompt after edit');
       page.saveEdit();
+      cy.wait('@editSave');
 
-      cy.wait('@editSendQuery').its('response.statusCode').should('eq', 200);
-      page.assertUserMessageContains('Updated prompt after edit');
+      page.getUserMessageContaining('Updated prompt after edit', 10000).should('be.visible');
     });
 
     it('C690720 - Verify that canceling the edit retains the original user prompt', () => {
@@ -161,18 +161,15 @@ describe('User Prompt Actions - Copy and Edit', () => {
     it('C690722 - Verify that the edited prompt is sent correctly and produces a new respective response', () => {
       const editedPrompt = 'Show only active users from the database';
 
-      cy.intercept('POST', page.sendQueryRoute, {
-        statusCode: 200,
-        body: { message: 'Mocked response for edited prompt' },
-      }).as('editedSendQuery');
+      cy.intercept({ method: 'POST', url: page.sendQueryRoute }, { statusCode: 200, body: {} }).as('editSave');
 
       page.hoverUserMessageContaining(basePrompt);
       page.clickEditIcon();
       page.clearAndTypeInEditArea(editedPrompt);
       page.saveEdit();
+      cy.wait('@editSave');
 
-      cy.wait('@editedSendQuery').its('response.statusCode').should('eq', 200);
-      page.assertUserMessageContains(editedPrompt);
+      page.getUserMessageContaining(editedPrompt, 10000).should('be.visible');
     });
 
     it('C690723 - Verify character limit validation when editing a prompt', () => {
@@ -203,7 +200,7 @@ describe('User Prompt Actions - Copy and Edit', () => {
     });
 
     it('C690725 - Verify edited prompt formatting is preserved with newlines, spacing, paragraphs', () => {
-      cy.intercept('POST', page.sendQueryRoute, { statusCode: 200, body: { message: 'Mocked response' } }).as('formatSendQuery');
+      cy.intercept({ method: 'POST', url: page.sendQueryRoute }, { statusCode: 200, body: {} }).as('editSave');
 
       page.hoverUserMessageContaining(basePrompt);
       page.clickEditIcon();
@@ -215,7 +212,7 @@ describe('User Prompt Actions - Copy and Edit', () => {
         .type('Line one{shift}{enter}Line two{shift}{enter}{shift}{enter}Line four after blank', { delay: 0 });
 
       page.saveEdit();
-      cy.wait('@formatSendQuery').its('response.statusCode').should('eq', 200);
+      cy.wait('@editSave');
 
       page.getLastUserMessage().invoke('html').then((html: string) => {
         const hasLineBreaks = /<br|&#10;|\n/.test(html);
@@ -227,20 +224,21 @@ describe('User Prompt Actions - Copy and Edit', () => {
       const firstEdit = 'First edited prompt';
       const secondEdit = 'Second edited prompt';
 
-      // Mock both subsequent send-query calls that follow each save.
-      cy.intercept('POST', page.sendQueryRoute, { statusCode: 200, body: { message: 'Mocked' } }).as('sendQueryAny');
+      cy.intercept({ method: 'POST', url: page.sendQueryRoute }, { statusCode: 200, body: {} }).as('editSave');
 
       page.hoverUserMessageContaining(basePrompt);
       page.clickEditIcon();
       page.clearAndTypeInEditArea(firstEdit);
       page.saveEdit();
-      cy.wait('@sendQueryAny').its('response.statusCode').should('eq', 200);
+      cy.wait('@editSave');
+      page.getUserMessageContaining(firstEdit, 10000).should('be.visible');
 
       page.hoverUserMessageContaining(firstEdit);
       page.clickEditIcon();
       page.clearAndTypeInEditArea(secondEdit);
       page.saveEdit();
-      cy.wait('@sendQueryAny').its('response.statusCode').should('eq', 200);
+      cy.wait('@editSave');
+      page.getUserMessageContaining(secondEdit, 10000).should('be.visible');
 
       // Current app behavior: previous edited prompt is also visible in the thread.
       cy.contains(firstEdit).should('exist');

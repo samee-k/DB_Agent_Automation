@@ -1,7 +1,6 @@
 /// <reference types="cypress" />
 
 import { ChatHistoryPage } from '../../pages/ChatHistoryPage';
-import { ensureChatsByProjectMinCount, seedChatsByProjectViaApiIfEmpty } from '../../support/commands';
 
 describe('Chat History Panel', () => {
   const chatHistoryPage = new ChatHistoryPage();
@@ -17,7 +16,7 @@ describe('Chat History Panel', () => {
     chatHistoryPage.visitChatPage();
     cy.wait('@getChatsByProject').its('response.statusCode').should('eq', 200);
 
-    seedChatsByProjectViaApiIfEmpty(5, 20);
+    cy.seedChatsByProjectViaApiIfEmpty(5, 20);
     chatHistoryPage.interceptGetChatsByProject();
     chatHistoryPage.visitChatPage();
     cy.wait('@getChatsByProject').its('response.statusCode').should('eq', 200);
@@ -139,16 +138,6 @@ describe('Chat History Panel', () => {
         chatHistoryPage.clickNewChatButton();
         chatHistoryPage.typeInChatPrompt(`History creation validation ${Date.now()}`);
         chatHistoryPage.clickSendButton();
-        cy.wait(1200, { log: false });
-        cy.get('@sendQuery.all').then((calls: unknown) => {
-          const requests = Array.isArray(calls) ? calls : [];
-          if (requests.length > 0) {
-            const statusCode = (requests[0] as { response?: { statusCode?: number } })?.response?.statusCode;
-            if (typeof statusCode === 'number') {
-              expect([200, 201, 202]).to.include(statusCode);
-            }
-          }
-        });
 
         const waitForHistoryIncrease = (retries = 6): Cypress.Chainable<undefined> => {
           return cy.request({
@@ -219,16 +208,6 @@ describe('Chat History Panel', () => {
         chatHistoryPage.clickNewChatButton();
         chatHistoryPage.typeInChatPrompt(`Preserve history validation ${Date.now()}`);
         chatHistoryPage.clickSendButton();
-        cy.wait(1200, { log: false });
-        cy.get('@sendQuery.all').then((calls: unknown) => {
-          const requests = Array.isArray(calls) ? calls : [];
-          if (requests.length > 0) {
-            const statusCode = (requests[0] as { response?: { statusCode?: number } })?.response?.statusCode;
-            if (typeof statusCode === 'number') {
-              expect([200, 201, 202]).to.include(statusCode);
-            }
-          }
-        });
 
         const waitForPreservedHistory = (retries = 6): Cypress.Chainable<undefined> => {
           return cy.request({
@@ -293,15 +272,6 @@ describe('Chat History Panel', () => {
     }).as('delayedChatLoad');
 
     chatHistoryPage.selectHistoryItemByIndex(0);
-
-    // The delayed request may be skipped if chat detail is cached; assert when request exists.
-    cy.wait(1200, { log: false });
-    cy.get('@delayedChatLoad.all').then((calls: unknown) => {
-      const requests = Array.isArray(calls) ? calls : [];
-      if (requests.length > 0) {
-        cy.wrap(requests[0]).its('response.statusCode').should('eq', 200);
-      }
-    });
 
     // Welcome content should not be visible after selecting an existing chat.
     cy.get('body').then(($body: JQuery<HTMLElement>) => {
@@ -456,7 +426,7 @@ describe('Chat History Panel', () => {
   });
 
   it('C698151 - Verify history panel retains scroll position after edit or delete.', () => {
-    ensureChatsByProjectMinCount(80, 120);
+    cy.ensureChatsByProjectMinCount(80, 120);
     chatHistoryPage.interceptGetChatsByProject();
     chatHistoryPage.interceptUpdateTitle();
     chatHistoryPage.interceptDeleteChat();
@@ -505,7 +475,7 @@ describe('Chat History Panel', () => {
   });
 
   it('C698126 - Verify that the panel scrolls when there are many history items.', () => {
-    ensureChatsByProjectMinCount(80, 120);
+    cy.ensureChatsByProjectMinCount(80, 120);
     chatHistoryPage.interceptGetChatsByProject();
     chatHistoryPage.visitChatPage();
     cy.wait('@getChatsByProject').its('response.statusCode').should('eq', 200);

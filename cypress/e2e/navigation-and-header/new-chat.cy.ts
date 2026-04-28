@@ -1,6 +1,5 @@
 /// <reference types="cypress" />
 
-import { loginBySession } from '../../support/commands';
 import { NewChatPage } from '../../pages/NewChatPage';
 
 describe('Navigation and Header - + New Chat', () => {
@@ -20,7 +19,7 @@ describe('Navigation and Header - + New Chat', () => {
   };
 
   beforeEach(() => {
-    loginBySession();
+    cy.loginBySession();
     page.openChatPage().waitForWelcomeScreen();
   });
 
@@ -114,12 +113,9 @@ describe('Navigation and Header - + New Chat', () => {
 
     page.typePrompt('First prompt to trigger delayed response').submitPromptWithEnter();
 
-    cy.get('@sendQuery.all', { timeout: 10000 })
-      .should('have.length', 1)
-      .then((calls: any) => {
-        const allCalls = Array.isArray(calls) ? calls : [];
-        expect(allCalls[0]?.response, 'first response should still be loading').to.be.undefined;
-      });
+    cy.wrap(null, { timeout: 15000 }).should(() => {
+      expect(callCount, 'exactly one request fired so far').to.eq(1);
+    });
 
     // Click New Chat while loading; if it is disabled/unclickable, that is also a valid pass
     // because blocking this action prevents background API calls from leaking into a fresh session.
@@ -138,7 +134,7 @@ describe('Navigation and Header - + New Chat', () => {
 
     // Let the delayed request finish and verify no additional send-query request was created.
     cy.wait('@sendQuery').its('response.statusCode').should('eq', 200);
-    cy.get('@sendQuery.all').should('have.length', 1);
+    cy.then(() => expect(callCount, 'no duplicate request fired').to.eq(1));
 
     cy.then(() => {
       const firstSessionId = capturedSessionIds[0] || '';

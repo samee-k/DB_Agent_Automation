@@ -1,7 +1,6 @@
 /// <reference types="cypress" />
 
 import { ChatHistoryPage } from '../../pages/ChatHistoryPage';
-import { loginByApi, seedChatsByProjectViaApiIfEmpty } from '../../support/commands';
 
 describe('Chat History Initial Seeder', () => {
   const chatHistoryPage = new ChatHistoryPage();
@@ -12,16 +11,7 @@ describe('Chat History Initial Seeder', () => {
     cy.visit('/');
     cy.clearAllSessionStorage();
 
-    cy.session('api-login-session', () => {
-      loginByApi();
-    }, {
-      validate() {
-        cy.window().then((windowObject: Window) => {
-          const token = windowObject.localStorage.getItem('access_token');
-          expect(token).to.be.a('string').and.not.be.empty;
-        });
-      },
-    });
+    cy.loginByApiSession();
 
     chatHistoryPage.interceptGetChatsByProject();
     chatHistoryPage.visitChatPage();
@@ -30,7 +20,7 @@ describe('Chat History Initial Seeder', () => {
   });
 
   it('Checks history and seeds 10 only when empty', () => {
-    seedChatsByProjectViaApiIfEmpty(10, 20);
+    cy.seedChatsByProjectViaApiIfEmpty(10, 20);
 
     chatHistoryPage.interceptGetChatsByProject();
     chatHistoryPage.visitChatPage();

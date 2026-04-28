@@ -1,6 +1,5 @@
 /// <reference types="cypress" />
 
-import { loginBySession } from '../../support/commands';
 import { InitialPromptPage } from '../../pages/InitialPromptPage';
 
 describe('Character Count and Input Validation Limit', () => {
@@ -49,7 +48,7 @@ describe('Character Count and Input Validation Limit', () => {
 
   // Setup per test for isolation
   beforeEach(() => {
-    loginBySession();
+    cy.loginBySession();
     promptPage.openChatPage().waitForWelcomeScreen();
     promptPage.clearPrompt();
     // Wait for counter to reset deterministically
@@ -118,9 +117,13 @@ describe('Character Count and Input Validation Limit', () => {
     assertSendDisabled();
     
     // Intercept API to validate no call on Enter
-    cy.intercept('POST', '**/send-message', { statusCode: 200 }).as('sendMessage');
+    let sendMessageCount = 0;
+    cy.intercept('POST', '**/send-message', (req) => {
+      sendMessageCount++;
+      req.reply({ statusCode: 200 });
+    }).as('sendMessage');
     getInputField().type('{enter}');
-    cy.get('@sendMessage.all').should('have.length', 0); // No API call should occur
+    cy.then(() => expect(sendMessageCount, 'no API call when over character limit').to.eq(0)); // No API call should occur
     promptPage.inputValue().should('equal', textOverLimit);
     cy.url().should('include', '/chat');
   });

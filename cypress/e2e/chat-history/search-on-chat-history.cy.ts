@@ -1,7 +1,6 @@
 /// <reference types="cypress" />
 
 import { ChatHistoryPage } from '../../pages/ChatHistoryPage';
-import { seedChatsByProjectViaApiIfEmpty } from '../../support/commands';
 
 describe('Search on Chat History', () => {
   const chatHistoryPage = new ChatHistoryPage();
@@ -27,7 +26,7 @@ describe('Search on Chat History', () => {
     chatHistoryPage.visitChatPage();
     cy.wait('@getChatsByProject').its('response.statusCode').should('eq', 200);
 
-    seedChatsByProjectViaApiIfEmpty(5, 20);
+    cy.seedChatsByProjectViaApiIfEmpty(5, 20);
     chatHistoryPage.interceptGetChatsByProject();
     chatHistoryPage.visitChatPage();
     cy.wait('@getChatsByProject').its('response.statusCode').should('eq', 200);

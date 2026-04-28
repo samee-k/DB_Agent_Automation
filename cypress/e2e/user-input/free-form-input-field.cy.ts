@@ -54,8 +54,13 @@ describe('Free-form Text Input Field Behaviour', () => {
     });
   };
 
+  let chatRequestCount = 0;
   const stubChatRequest = () => {
-    cy.intercept('POST', '**/chat**', { statusCode: 200, body: { message: 'Mocked response' } }).as('chatRequest');
+    chatRequestCount = 0;
+    cy.intercept('POST', '**/chat**', (req) => {
+      chatRequestCount++;
+      req.reply({ statusCode: 200, body: { message: 'Mocked response' } });
+    }).as('chatRequest');
   };
 
   beforeEach(() => {
@@ -199,10 +204,8 @@ describe('Free-form Text Input Field Behaviour', () => {
     page.messageInput().type(' still responsive');
     page.messageInput().type('{enter}');
 
-    cy.get('@chatRequest.all').then((calls: any) => {
-      const requestCount = Array.isArray(calls) ? calls.length : 0;
-
-      if (requestCount > 0) {
+    cy.then(() => {
+      if (chatRequestCount > 0) {
         page.inputValue().then((value) => {
           expect(`${value ?? ''}`.trim()).to.eq('');
         });
@@ -233,7 +236,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     stubChatRequest();
 
     page.appendPrompt(`Line one{shift}{enter}Line two`);
-    cy.get('@chatRequest.all').should('have.length', 0);
+    cy.then(() => expect(chatRequestCount, 'no request on Shift+Enter').to.eq(0));
 
     page.inputHtml().then((html) => {
       const htmlText = `${html ?? ''}`;
@@ -258,7 +261,7 @@ describe('Free-form Text Input Field Behaviour', () => {
 
     page.appendPrompt('   ');
     page.messageInput().should('be.visible').type('{enter}');
-    cy.get('@chatRequest.all').should('have.length', 0);
+    cy.then(() => expect(chatRequestCount, 'no request for whitespace-only input').to.eq(0));
   });
 
   it('C716309 - Verify that pressing Enter twice rapidly does not create duplicate messages.', () => {
@@ -268,7 +271,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     page.messageInput().should('be.visible').type('{enter}{enter}');
 
     cy.wait('@chatRequest');
-    cy.get('@chatRequest.all').should('have.length', 1);
+    cy.then(() => expect(chatRequestCount, 'exactly one request on double Enter').to.eq(1));
   });
 
   it('C700487 - Verify that input field is cleared immediately upon clicking Send / Enter.', () => {
@@ -287,7 +290,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     stubChatRequest();
 
     page.appendPrompt(shortPrompt);
-    cy.get('@chatRequest.all').should('have.length', 0);
+    cy.then(() => expect(chatRequestCount, 'no request without pressing send').to.eq(0));
   });
 
   it('C700471 - Verify input field is re-enabled after the response.', () => {
@@ -312,7 +315,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     page.messageInput().should('be.visible').type('{enter}');
 
     cy.wait('@chatRequest');
-    cy.get('@chatRequest.all').should('have.length', 2);
+    cy.then(() => expect(chatRequestCount, 'two requests for two prompts').to.eq(2));
   });
 
   it('C720003 - Verify conversation context is preserved across follow-up prompts.', () => {

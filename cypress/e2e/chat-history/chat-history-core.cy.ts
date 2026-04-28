@@ -1,7 +1,6 @@
 /// <reference types="cypress" />
 
 import { ChatHistoryPage } from '../../pages/ChatHistoryPage';
-import { clearChatsByProjectViaApi } from '../../support/commands';
 
 describe('Chat History - Core', () => {
   const chatHistoryPage = new ChatHistoryPage();
@@ -22,7 +21,7 @@ describe('Chat History - Core', () => {
 
   // Clears chats via API then reloads so the UI reflects an empty state.
   const reloadAfterClear = () => {
-    clearChatsByProjectViaApi();
+    cy.clearChatsByProjectViaApi();
     chatHistoryPage.interceptGetChatsByProject();
     cy.reload();
     cy.wait('@getChatsByProject').its('response.statusCode').should('eq', 200);
