@@ -9,26 +9,50 @@ describe('Login Feature (15/15 test cases)', () => {
   const invalidCredentialsMessage = 'Invalid Login Credentials.';
   const invalidEmailMessage = 'Invalid email address';
   const projectsLandingText = 'Studio Projects';
+  const samplePassword = 'TestPassword123';
 
-  const getValidCredentials = () =>
+  const getValidCredentials = (): Cypress.Chainable<{ email: string; password: string }> =>
     cy.fixture('users').then((users: UsersFixture) => ({
       email: String(Cypress.env('USER_EMAIL') || users.validUser.email || '').trim(),
       password: String(Cypress.env('USER_PASSWORD') || users.validUser.password || '').trim(),
     }));
 
-  const submitLogin = (email: string, password: string) => {
+  const fillCredentials = (email: string, password: string): void => {
     loginPage.enterEmail(email);
     loginPage.enterPassword(password);
+  };
+
+  const submitLogin = (email: string, password: string): void => {
+    fillCredentials(email, password);
     loginPage.clickLoginButton();
   };
 
-  const assertRequiredFieldErrorVisible = () => {
+  const enterValidEmail = () => {
+    return getValidCredentials().then(({ email }) => {
+      loginPage.enterEmail(email);
+    });
+  };
+
+  const assertRequiredFieldErrorVisible = (): void => {
     cy.contains(requiredFieldMessage).should('be.visible');
   };
 
-  const assertLoginSuccess = () => {
+  const assertLoginSuccess = (): void => {
     cy.url().should('not.include', '/login');
     cy.contains(projectsLandingText).should('be.visible');
+  };
+
+  const assertPasswordInputType = (type: 'password' | 'text'): void => {
+    loginPage.getPasswordInput().should('have.attr', 'type', type);
+  };
+
+  const suppressKnownInvalidLoginException = (): void => {
+    cy.on('uncaught:exception', (err: Error) => {
+      if (/request failed with status code 401/i.test(err.message)) {
+        return false;
+      }
+      return true;
+    });
   };
 
   beforeEach(() => {
@@ -42,10 +66,8 @@ describe('Login Feature (15/15 test cases)', () => {
 
   // TestRail IDs covered in this merged test: C669522, C669523, C669524
   // C669522 - Verify that the Email field is present on the login page
-  //  C669523 - Verify that the Password field is present on the login page'
-  //  C669524 - Verify that the Login button is present on the login page'
-
-
+  // C669523 - Verify that the Password field is present on the login page
+  // C669524 - Verify that the Login button is present on the login page
   it('C669522 + C669523 + C669524 - Verify login form controls are visible on the login page', () => {
     loginPage.getEmailInput().should('be.visible');
     loginPage.getPasswordInput().should('be.visible');
@@ -63,8 +85,7 @@ describe('Login Feature (15/15 test cases)', () => {
   
   // C669526 - Password field required
   it('C669526 - Verify that password field should be required field', () => {
-    getValidCredentials().then(({ email }) => {
-      loginPage.enterEmail(email);
+    enterValidEmail().then(() => {
       loginPage.clickLoginButton();
     });
     assertRequiredFieldErrorVisible();
@@ -73,14 +94,8 @@ describe('Login Feature (15/15 test cases)', () => {
   
   // C669527 - Wrong credentials blocked & Show Invalid Login Credentials.
   it('C669527 - Verify that the user cannot login with invalid credentials and receives the \'Invalid Login Credentials\' pop-up.', () => {
-    // Suppress only the known 401 XHR error thrown by the app's HTTP client.
-    // Any other uncaught exception is intentionally left to fail the test.
-    cy.on('uncaught:exception', (err: Error) => {
-      if (/request failed with status code 401/i.test(err.message)) {
-        return false;
-      }
-      return true;
-    });
+    // Suppress only known 401 client exception from the app's HTTP client.
+    suppressKnownInvalidLoginException();
 
     cy.fixture('users').then((users: UsersFixture) => {
       submitLogin(users.invalidUser.email, users.invalidUser.password);
@@ -102,12 +117,12 @@ describe('Login Feature (15/15 test cases)', () => {
   // C688014 - Verify that the Password field masks the entered characters by default
   // C688017 - Verify that clicking the eye icon toggles password visibility
   it('C688014 + C688017 - Verify password is masked by default and toggles visibility with eye icon', () => {
-    loginPage.enterPassword('TestPassword123');
-    loginPage.getPasswordInput().should('have.attr', 'type', 'password');
+    loginPage.enterPassword(samplePassword);
+    assertPasswordInputType('password');
     loginPage.togglePasswordVisibility();
-    loginPage.getPasswordInput().should('have.attr', 'type', 'text');
+    assertPasswordInputType('text');
     loginPage.togglePasswordVisibility();
-    loginPage.getPasswordInput().should('have.attr', 'type', 'password');
+    assertPasswordInputType('password');
   });
 
   // C688019 - Leading/trailing spaces trimmed
@@ -119,7 +134,7 @@ describe('Login Feature (15/15 test cases)', () => {
     getValidCredentials().then(({ password }) => {
       submitLogin(emailWithSpaces, password);
     });
-    cy.url().should('not.include', '/login');
+    assertLoginSuccess();
   });
 
   // C715140 - Email format validation and "Invalid email address" error
@@ -128,7 +143,7 @@ describe('Login Feature (15/15 test cases)', () => {
       cy.wrap(users.invalidEmailFormats).each((invalidEmail) => {
         loginPage.visitPage();
 
-        submitLogin(String(invalidEmail), 'TestPassword123');
+        submitLogin(String(invalidEmail), samplePassword);
         
         // Should still be on login page (invalid email prevented login)
         loginPage.getLoginButton().should('be.visible');
@@ -152,8 +167,7 @@ describe('Login Feature (15/15 test cases)', () => {
   // C715142 - Login with Enter key
   it('C715142 - Verify user should be allowed to trigger login action pressing Enter from the password field', () => {
     getValidCredentials().then(({ email, password }) => {
-      loginPage.enterEmail(email);
-      loginPage.enterPassword(password);
+      fillCredentials(email, password);
       loginPage.submitWithEnterFromPassword();
     });
     
