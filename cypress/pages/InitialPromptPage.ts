@@ -1,7 +1,6 @@
 /// <reference types="cypress" />
 
 import { LoginPage } from './LoginPage';
-import { loginBySession } from '../support/commands';
 
 type CardDefinition = {
   title: string;
@@ -11,6 +10,9 @@ export class InitialPromptPage {
   readonly chatPath = Cypress.env('chatPath');
   readonly chatApiRouteMatcher = '**/api/chats/*/send-query';
   private readonly promptInputSelector = [
+    '#dbagent-textarea',
+    'textarea.dbagent-textarea',
+    'textarea[id="dbagent-textarea"]',
     '[data-testid="message-input"]',
     '[data-testid="chat-input"]',
     '[data-cy="chat-input"]',
@@ -68,7 +70,7 @@ export class InitialPromptPage {
   }
 
   loginOnceForSuite() {
-    loginBySession();
+    cy.loginBySession();
     return this;
   }
 

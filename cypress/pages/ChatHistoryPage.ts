@@ -145,6 +145,8 @@ export class ChatHistoryPage {
   ].join(', ');
 
   private readonly chatInput = [
+    '#dbagent-textarea',
+    'textarea.dbagent-textarea',
     '[data-cy="chat-input"]',
     'textarea.chat-input',
     'textarea[placeholder*="Ask here" i]',

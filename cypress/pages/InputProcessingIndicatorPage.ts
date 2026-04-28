@@ -1,13 +1,14 @@
 /// <reference types="cypress" />
 
-import { loginBySession } from '../support/commands';
-
 export class InputProcessingIndicatorPage {
   readonly chatPath = Cypress.env('chatPath') ?? '/dbagent/11/chat';
   readonly sendQueryRoute = '**/api/chats/*/send-query';
   readonly processingStateRegex = /Data analysis|Data extraction|Data processing|Generating visuals/i;
 
   private readonly promptInputSelector = [
+    '#dbagent-textarea',
+    'textarea.dbagent-textarea',
+    'textarea[id="dbagent-textarea"]',
     '[data-testid="message-input"]',
     '[data-testid="chat-input"]',
     '[data-cy="chat-input"]',
@@ -54,7 +55,7 @@ export class InputProcessingIndicatorPage {
   readonly editModeLabelRegex = /Edit your prompt/i;
 
   loginOnceForSuite() {
-    loginBySession();
+    cy.loginBySession();
     return this;
   }
 
@@ -74,11 +75,7 @@ export class InputProcessingIndicatorPage {
   }
 
   messageInput(): Cypress.Chainable<JQuery<HTMLElement>> {
-    return cy.get('body', { timeout: 20000 }).then(($body: JQuery<HTMLElement>) => {
-      const visibleInputs = $body.find(this.promptInputSelector).filter(':visible');
-      expect(visibleInputs.length, 'visible prompt input').to.be.greaterThan(0);
-      return cy.wrap(visibleInputs.first() as JQuery<HTMLElement>);
-    });
+    return cy.get(this.promptInputSelector, { timeout: 20000 }).filter(':visible').first();
   }
 
   sendButton(): Cypress.Chainable<JQuery<HTMLElement>> {

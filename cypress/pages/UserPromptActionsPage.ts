@@ -1,7 +1,5 @@
 /// <reference types="cypress" />
 
-import { loginBySession } from '../support/commands';
-
 export class UserPromptActionsPage {
   readonly chatPath = Cypress.env('chatPath') ?? '/dbagent/11/chat';
   readonly sendQueryRoute = '**/api/chats/*/send-query';
@@ -9,6 +7,9 @@ export class UserPromptActionsPage {
 
   // Input
   private readonly promptInputSelector = [
+    '#dbagent-textarea',
+    'textarea.dbagent-textarea',
+    'textarea[id="dbagent-textarea"]',
     '[data-testid="message-input"]',
     '[data-testid="chat-input"]',
     '[data-cy="chat-input"]',
@@ -94,7 +95,7 @@ export class UserPromptActionsPage {
   // ── Auth ──────────────────────────────────────────────────────────────────
 
   loginOnceForSuite() {
-    loginBySession();
+    cy.loginBySession();
     return this;
   }
 
@@ -113,11 +114,7 @@ export class UserPromptActionsPage {
   // ── Input helpers ─────────────────────────────────────────────────────────
 
   messageInput(): Cypress.Chainable<JQuery<HTMLElement>> {
-    return cy.get('body', { timeout: 20000 }).then(($body: JQuery<HTMLElement>) => {
-      const visibleInputs = $body.find(this.promptInputSelector).filter(':visible');
-      expect(visibleInputs.length, 'visible prompt input').to.be.greaterThan(0);
-      return cy.wrap(visibleInputs.first() as JQuery<HTMLElement>);
-    });
+    return cy.get(this.promptInputSelector, { timeout: 20000 }).filter(':visible').first();
   }
 
   typePrompt(text: string) {
@@ -137,12 +134,43 @@ export class UserPromptActionsPage {
   }
 
   sendPromptAndWait(text: string) {
-    // times:1 ensures these intercepts do NOT consume subsequent requests from edit/save actions.
+    // Use this only in tests that explicitly need backend response completion.
+    // Timeouts reflect realistic SLA expectations — if the backend is slower than these,
+    // the test failing is the correct outcome.
     cy.intercept({ method: 'POST', url: this.createChatRoute, times: 1 }).as('createChat');
-    cy.intercept({ method: 'POST', url: this.sendQueryRoute, times: 1 }, { statusCode: 200, body: { message: 'Mocked response' } }).as('sendQuery');
+    cy.intercept({ method: 'POST', url: this.sendQueryRoute, times: 1 }).as('sendQuery');
+
     this.typePrompt(text).submitPrompt();
-    cy.wait('@createChat').its('response.statusCode').should('be.oneOf', [200, 201]);
-    cy.wait('@sendQuery').its('response.statusCode').should('eq', 200);
+
+    cy.wait('@createChat', { timeout: 30000 }).its('response.statusCode').should('be.oneOf', [200, 201]);
+    cy.wait('@sendQuery', { timeout: 90000 }).its('response.statusCode').should('be.oneOf', [200, 201, 202]);
+
+    cy.location('search', { timeout: 30000 }).should((search: string) => {
+      const params = new URLSearchParams(search);
+      const sessionId = params.get('sessionId');
+      expect(sessionId, 'sessionId after first prompt').to.be.a('string').and.not.be.empty;
+    });
+
+    this.getUserMessageContaining(text, 30000).should('be.visible');
+    return this;
+  }
+
+  sendPromptAndEnsureUserMessage(text: string) {
+    // Flake-safe setup for UI-action tests: ensure chat is created and user prompt is rendered,
+    // without waiting for the assistant response to complete.
+    cy.intercept({ method: 'POST', url: this.createChatRoute, times: 1 }).as('createChat');
+
+    this.typePrompt(text).submitPrompt();
+
+    cy.wait('@createChat', { timeout: 30000 }).its('response.statusCode').should('be.oneOf', [200, 201]);
+
+    cy.location('search', { timeout: 30000 }).should((search: string) => {
+      const params = new URLSearchParams(search);
+      const sessionId = params.get('sessionId');
+      expect(sessionId, 'sessionId after first prompt').to.be.a('string').and.not.be.empty;
+    });
+
+    this.getUserMessageContaining(text, 30000).should('be.visible');
     return this;
   }
 
@@ -150,8 +178,8 @@ export class UserPromptActionsPage {
 
   private activeUserMessageAlias = 'activeUserMessage';
 
-  getUserMessageContaining(text: string): Cypress.Chainable<JQuery<HTMLElement>> {
-    return cy.contains('*', text, { timeout: 15000 }).should('be.visible').then(($el: JQuery<HTMLElement>) => {
+  getUserMessageContaining(text: string, timeoutMs = 30000): Cypress.Chainable<JQuery<HTMLElement>> {
+    return cy.contains('*', text, { timeout: timeoutMs }).should('be.visible').then(($el: JQuery<HTMLElement>) => {
       const scoped = $el.closest(this.userMessageContainerSelector);
       if (scoped.length > 0) {
         return cy.wrap(scoped.first() as JQuery<HTMLElement>);
