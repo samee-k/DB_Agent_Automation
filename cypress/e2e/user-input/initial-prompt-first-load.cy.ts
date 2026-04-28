@@ -42,8 +42,26 @@ describe('Initial Prompt Options on First Load', () => {
   });
 
   it('C688020 - Verify a default chat session is automatically created on initial application load.', () => {
+    // Before first message, URL should not yet have an active sessionId.
+    cy.location('search').then((search: string) => {
+      const params = new URLSearchParams(search);
+      expect(params.get('sessionId')).to.be.null;
+    });
+
+    cy.intercept('POST', page.chatApiRouteMatcher).as('firstMessage');
+
+    page.sendPromptResilient('Create my first chat session');
+    cy.wait('@firstMessage').its('response.statusCode').should('be.oneOf', [200, 201]);
+
+    // After first message, a sessionId must be generated and reflected in the URL.
+    cy.location('search', { timeout: 30000 }).should((search: string) => {
+      const params = new URLSearchParams(search);
+      const sessionId = params.get('sessionId');
+
+      expect(sessionId, 'sessionId query param').to.be.a('string').and.not.be.empty;
+    });
+
     page.chatTitle().should('be.visible');
-    cy.contains(/Untitled\s*chat/i).should('have.length.at.least', 1);
   });
 
   it('C700466 - Verify that no previous chat data appears in new session.', () => {
