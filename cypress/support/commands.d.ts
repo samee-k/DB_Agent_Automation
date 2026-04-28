@@ -6,6 +6,7 @@ declare global {
       undo(): Chainable;
       getAccessToken(): Chainable<string>;
       undoJS(selector: string): Chainable;
+      loginBySession(): Chainable<void>;
       loginByApi(): Chainable<void>;
       loginByApiSession(): Chainable<void>;
       clearSessionStorage(): Chainable<void>;
