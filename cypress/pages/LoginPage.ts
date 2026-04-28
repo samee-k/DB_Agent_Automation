@@ -4,7 +4,11 @@ export class LoginPage {
   private readonly logo = 'img[src*="aI-studio-logo"]';
   private readonly emailInput = '#email';
   private readonly passwordInput = '#password';
-  private readonly loginButton = 'button[type="submit"]';
+  private readonly loginButton = [
+    '[data-cy="login-button"]',
+    'button[type="submit"]',
+    'button.btn.btn-primary.btn-lg',
+  ].join(', ');
   private readonly toastMessage = '.toast__error .text-black';
   private readonly passwordToggle = '.pwd-block button, .password-toggle, [data-cy="toggle-password"]';
 
@@ -25,7 +29,7 @@ export class LoginPage {
   }
 
   getLoginButton() {
-    return cy.get(this.loginButton);
+    return cy.get(this.loginButton).filter(':visible').first();
   }
 
   getToastMessage() {
@@ -43,7 +47,7 @@ export class LoginPage {
   }
 
   clickLoginButton() {
-    cy.get(this.loginButton).click();
+    this.getLoginButton().click();
     return this;
   }
 
