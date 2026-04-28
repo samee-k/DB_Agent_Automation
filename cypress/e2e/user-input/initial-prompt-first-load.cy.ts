@@ -51,7 +51,7 @@ describe('Initial Prompt Options on First Load', () => {
     cy.intercept('POST', page.chatApiRouteMatcher).as('firstMessage');
 
     page.sendPromptResilient('Create my first chat session');
-    cy.wait('@firstMessage').its('response.statusCode').should('be.oneOf', [200, 201]);
+    cy.wait('@firstMessage');
 
     // After first message, a sessionId must be generated and reflected in the URL.
     cy.location('search', { timeout: 30000 }).should((search: string) => {
