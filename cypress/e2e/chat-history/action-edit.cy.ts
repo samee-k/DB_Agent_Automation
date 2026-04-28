@@ -191,6 +191,41 @@ describe('Action (Edit)', () => {
     });
   });
 
+  it('C782432 - Verify that edited chat sorts to top of the list without refreshing the page.', () => {
+    return ensureMinHistoryItems(2).then(() => {
+      cy.fixture('chatHistory').then((chatHistoryData: any) => {
+        const uniqueTitle = `${chatHistoryData.updatedTitle} MoveTop ${Date.now()}`;
+
+        chatHistoryPage.getHistoryItems().its('length').then((initialCount: number) => {
+          cy.location('pathname').then((pathBefore: string) => {
+            // Edit a middle/end non-top item to validate it bubbles to the top in-place.
+            const targetIndex = initialCount > 2 ? Math.floor(initialCount / 2) : initialCount - 1;
+            expect(targetIndex, 'target index should never be the first row').to.be.greaterThan(0);
+
+            chatHistoryPage.openHistoryMenuByIndex(targetIndex);
+            chatHistoryPage.clickEditAction();
+            chatHistoryPage.updateTitle(uniqueTitle);
+
+            cy.wait('@updateChatTitle').then((interception: any) => {
+              expect(interception.response?.statusCode).to.eq(200);
+              expect(interception.response?.body?.data?.title).to.eq(uniqueTitle);
+            });
+
+            cy.location('pathname').should('eq', pathBefore);
+            chatHistoryPage.getHistoryItems().its('length').should('eq', initialCount);
+
+            chatHistoryPage.getAllHistoryItemTexts().then((titles: string[]) => {
+              expect(titles.length, 'history list should not be empty').to.be.greaterThan(0);
+              expect(titles[0], 'edited chat should be sorted to top').to.eq(uniqueTitle);
+              const occurrences = titles.filter((title: string) => title === uniqueTitle).length;
+              expect(occurrences, 'edited title should appear exactly once').to.eq(1);
+            });
+          });
+        });
+      });
+    });
+  });
+
   it('C700503 - Verify that Edit buttons are accessible via keyboard.', () => {
     chatHistoryPage.openHistoryPanel();
 
