@@ -437,14 +437,21 @@ describe('Chat History Panel', () => {
       expect(injectedTitles, 'bucket fixture should be injected into response').to.include('recent chat a');
     });
 
-    chatHistoryPage.openHistoryPanel();
-    chatHistoryPage.getPanel().should('be.visible').should(($panel: JQuery<HTMLElement>) => {
-      const panelText = ($panel.text() || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const expectedHeaders = [
+      'Recent',
+      'Last 7 Days',
+      'Last 30 Days',
+      'Last 3 Months',
+    ];
 
-      expect(panelText, 'contains Recent group').to.include('recent');
-      expect(panelText, 'contains Last 7 Days group').to.include('last 7 days');
-      expect(panelText, 'contains Last 30 Days group').to.include('last 30 days');
-      expect(panelText, 'contains Last 3 Months group').to.include('last 3 months');
+    chatHistoryPage.openHistoryPanel();
+    chatHistoryPage.getPanel().should('be.visible');
+    chatHistoryPage.getGroupHeaders().should('have.length.at.least', expectedHeaders.length);
+    chatHistoryPage.getGroupHeaders().each(($el: JQuery<HTMLElement>, index: number) => {
+      if (index < expectedHeaders.length) {
+        const actualText = ($el.text() || '').replace(/\s+/g, ' ').trim();
+        expect(actualText, `group header at index ${index}`).to.eq(expectedHeaders[index]);
+      }
     });
   });
 
