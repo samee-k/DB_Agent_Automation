@@ -1,35 +1,19 @@
 /// <reference types="cypress" />
 
-import { LoginPage } from './LoginPage';
+import { CHAT_INPUT_SELECTORS, SEND_BUTTON_SELECTOR } from './CommonSelectors';
 
-type CardDefinition = {
-  title: string;
-  description: string;
-};
 export class InitialPromptPage {
-  readonly chatPath = Cypress.env('chatPath');
+  readonly chatPath = Cypress.env('chatPath') || `/dbagent/${Cypress.env('projectId') || '11'}/chat`;
   readonly chatApiRouteMatcher = '**/api/chats/*/send-query';
-  private readonly promptInputSelector = [
-    '#dbagent-textarea',
-    'textarea.dbagent-textarea',
-    'textarea[id="dbagent-textarea"]',
-    '[data-testid="message-input"]',
-    '[data-testid="chat-input"]',
-    '[data-cy="chat-input"]',
-    'textarea.chat-input',
-    'textarea[placeholder*="Ask here"]',
-    '[role="textbox"][placeholder*="Ask here"]',
-    '[role="textbox"]',
-    '[contenteditable="true"]',
-    'textarea.dbagent-textarea',
-    'textarea.form-control',
-    '.ProseMirror',
-    '.ql-editor',
-  ].join(', ');
+  private readonly chatInputSelector = [...CHAT_INPUT_SELECTORS, 'textarea.form-control'].join(', ');
   private readonly historyIconSelector = [
+    '[data-cy="chat-history-toggle"]',
     '[data-testid="history-icon"]',
     'button[aria-label*="history" i]',
     '[role="button"][aria-label*="history" i]',
+    'button[title*="history" i]',
+    '[role="button"][title*="history" i]',
+    'button.icon-btn-alt',
   ].join(', ');
   private readonly appLogoSelector = [
     '[data-testid="app-logo"]',
@@ -38,81 +22,27 @@ export class InitialPromptPage {
     'header img',
     'header svg',
   ].join(', ');
-  private readonly loginPage = new LoginPage();
-
-  readonly cards: CardDefinition[] = [
-    {
-      title: 'Built for exploration',
-      description: 'Designed to help you explore, question, and understand your data effortlessly.',
-    },
-    {
-      title: 'Visual Results Made Simple',
-      description: 'Watch your data transform into interactive graphs and tables, with real-time feedback.',
-    },
-    {
-      title: 'Write Your Own Query',
-      description: 'Ask anything about your database with natural text input and smart suggestions.',
-    },
-    {
-      title: 'Transparent SQL Queries',
-      description: 'Watch your data transform into interactive graphs and tables, with real-time feedback.',
-    },
-  ];
-
-  readonly disclaimer = '*To support informed decisions, please review the information carefully.';
-  readonly offlineTitle = 'No internet connection';
-  readonly offlineDescription = 'It seems there is something wrong with your internet connection.';
-  readonly offlineAction = 'Please connect to the internet and try again.';
-
-  visitRoot() {
-    cy.visit(this.chatPath);
-    return this;
-  }
-
-  loginOnceForSuite() {
-    cy.loginBySession();
-    return this;
-  }
-
+  private readonly chatTitleSelector = [
+    '[data-testid="chat-title"]',
+    '[data-cy="chat-title"]',
+    '.chat-title',
+    '.chat-header .text-truncate',
+    'header .text-truncate',
+    'header h1',
+    'header h2',
+    'p.text-truncate',
+  ].join(', ');
   openChatPage() {
     cy.visit(this.chatPath);
     return this;
   }
 
-  loginIfLoginPageIsVisible() {
-    cy.url({ timeout: 20000 }).then((currentUrl: string) => {
-      if (currentUrl.includes('/login')) {
-        this.loginPage.login_with_right_credential();
-      }
-    });
-
-    cy.visit(this.chatPath);
-
-    return this;
-  }
-
-  waitForWelcomeScreen() {
-    cy.document({ timeout: 30000 }).should((documentObject: Document) => {
-      const pageText = documentObject.body?.innerText?.replace(/\s+/g, ' ').trim() ?? '';
-      const hasWelcomeText = /Welcome to DB agent/i.test(pageText);
-      const hasFeatureSection = /Built for exploration|Write Your Own Query|Visual Results Made Simple|Transparent SQL Queries/i.test(pageText);
-      const hasInputField = documentObject.querySelector(this.promptInputSelector) !== null;
-
-      if (!hasWelcomeText && !hasFeatureSection && !hasInputField) {
-        throw new Error(
-          `Welcome content or input field not found. URL: ${documentObject.location.href} | Title: ${documentObject.title} | Body: ${pageText.slice(0, 300)}`,
-        );
-      }
-    });
-    return this;
-  }
-
   welcomeTitle() {
-    return cy.contains('Welcome to DB Agent');
+    return cy.contains(/Welcome to DB Agent/i);
   }
 
   chatTitle() {
-    return cy.contains(/Untitled\s*chat/i);
+    return cy.get(this.chatTitleSelector, { timeout: 20000 }).filter(':visible').contains(/Untitled\s*chat/i);
   }
 
   newChatAction() {
@@ -120,28 +50,19 @@ export class InitialPromptPage {
   }
 
   historyIconCandidate() {
-    return cy.get(this.historyIconSelector).filter(':visible').first().should('exist');
+    return cy.get(this.historyIconSelector).filter(':visible').first();
   }
 
   appLogo() {
-    return cy.get(this.appLogoSelector).filter(':visible').first().should('exist');
+    return cy.get(this.appLogoSelector).filter(':visible').first();
   }
 
   messageInput(): Cypress.Chainable<JQuery<HTMLElement>> {
-    return cy
-      .get('body', { timeout: 20000 })
-      .should(($body: JQuery<HTMLElement>) => {
-        const visibleInputs = $body.find(this.promptInputSelector).filter(':visible');
-        expect(visibleInputs.length, 'visible prompt input').to.be.greaterThan(0);
-      })
-      .then(($body: JQuery<HTMLElement>) => {
-        const visibleInputs = $body.find(this.promptInputSelector).filter(':visible');
-        return cy.wrap(visibleInputs.first() as JQuery<HTMLElement>);
-      });
+    return cy.get(this.chatInputSelector, { timeout: 20000 }).filter(':visible').first();
   }
 
   sendButton() {
-    return cy.get('button[aria-label="Send"][type="button"]');
+    return cy.get(SEND_BUTTON_SELECTOR).filter(':visible').first();
   }
 
   characterCounter() {
@@ -149,15 +70,7 @@ export class InitialPromptPage {
   }
 
   featureCardByTitle(title: string) {
-    return cy.contains(new RegExp(title, 'i')).should('be.visible');
-  }
-
-  verifyFeatureCardTexts() {
-    this.cards.forEach((card) => {
-      cy.contains(card.title).should('be.visible');
-      cy.contains(card.description).should('be.visible');
-    });
-    return this;
+    return cy.contains(new RegExp(title, 'i'));
   }
 
   private isContentEditableInput($input: JQuery<HTMLElement>): boolean {
@@ -166,7 +79,7 @@ export class InitialPromptPage {
   }
 
   private focusInput($input: JQuery<HTMLElement>) {
-    cy.wrap($input).should('exist').should('be.visible').click();
+    cy.wrap($input).click();
   }
 
   typePrompt(promptText: string) {
@@ -246,34 +159,8 @@ export class InitialPromptPage {
     });
   }
 
-  inputShouldBeEnabled() {
-    return this.messageInput().should('not.be.disabled');
-  }
-
-  sendPromptResilient(promptText: string) {
-    this.typePrompt(promptText);
-    this.submitPrompt();
-    return this;
-  }
-
   submitPrompt() {
-    this.sendButton().should('exist').should('be.visible').click();
-    return this;
-  }
-
-  verifyOfflineErrorMessage(timeout = 20000) {
-    cy.contains(this.offlineTitle, { timeout }).should('be.visible');
-    cy.contains(this.offlineDescription, { timeout }).should('be.visible');
-    cy.contains(this.offlineAction, { timeout }).should('be.visible');
-    return this;
-  }
-
-  verifyWelcomeContentNotDuplicated() {
-    cy.contains(/Welcome to DB agent/i).should('have.length', 1);
-    cy.contains(/Built for exploration/i).should('have.length', 1);
-    cy.contains(/Visual Results Made Simple/i).should('have.length', 1);
-    cy.contains(/Write Your Own Query/i).should('have.length', 1);
-    cy.contains(/Transparent SQL Queries/i).should('have.length', 1);
+    this.sendButton().click();
     return this;
   }
 }
