@@ -37,6 +37,11 @@ export class InitialPromptPage {
     return this;
   }
 
+  waitForWelcomeScreen() {
+    cy.contains(/Welcome to DB Agent/i, { timeout: 30000 }).should('be.visible');
+    return this;
+  }
+
   welcomeTitle() {
     return cy.contains(/Welcome to DB Agent/i);
   }
