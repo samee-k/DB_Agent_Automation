@@ -5,39 +5,112 @@ import { InputProcessingIndicatorPage } from '../../pages/InputProcessingIndicat
 describe('Input Processing Indicator', () => {
   const page = new InputProcessingIndicatorPage();
 
-  /**
-   * Delays the real send-query response so the indicator stays visible long
-   * enough for assertions, without replacing the response body.
-   */
-  const delayedSuccess = (alias: string, delay = 5000) => {
+  // ── Network intercept helpers ─────────────────────────────────────────────
+
+  const interceptDelayedSuccess = (alias: string, delay = 5000): void => {
     cy.intercept({ method: 'POST', url: page.sendQueryRoute, times: 1 }, (req) => {
-      req.continue((res) => {
-        res.setDelay(delay);
-      });
+      req.continue((res) => { res.setDelay(delay); });
     }).as(alias);
   };
 
-  /**
-   * Intercepts and forces a server error response so error-recovery tests
-   * can verify the indicator clears after a failed response.
-   */
-  const delayedFailure = (alias: string, delay = 3000, statusCode = 500) => {
+  const interceptDelayedFailure = (alias: string, delay = 3000, statusCode = 500): void => {
     cy.intercept({ method: 'POST', url: page.sendQueryRoute, times: 1 }, (req) => {
       req.reply({ statusCode, delay, body: { message: 'Mocked failure' } });
     }).as(alias);
   };
 
-  /** Starts a delayed request and immediately asserts the indicator is visible. */
-  const startLoading = (alias: string, prompt: string, delay = 7000) => {
-    delayedSuccess(alias, delay);
-    page.sendPrompt(prompt);
-    page.assertProcessingIndicatorVisible(4000);
+  // Returns a ref object so the count can be read inside cy.then() callbacks.
+  const interceptCounting = (alias: string, delay: number): { count: number } => {
+    const ref = { count: 0 };
+    cy.intercept({ method: 'POST', url: page.sendQueryRoute }, (req) => {
+      ref.count += 1;
+      req.continue((res) => { res.setDelay(delay); });
+    }).as(alias);
+    return ref;
   };
 
-  /** Waits for a network alias to settle without asserting on status code. */
-  const waitForRequest = (alias: string, timeout = 30000) => {
+  // ── Assertion helpers ─────────────────────────────────────────────────────
+
+  const assertIndicatorVisible = (timeout = 8000): void => {
+    cy.get('body', { timeout }).should(($body: JQuery<HTMLElement>) => {
+      const visible = $body.find('*').filter(':visible').toArray()
+        .some((el: Element) => page.processingStateRegex.test((el.textContent || '').trim()));
+      expect(visible, 'processing indicator should be visible').to.eq(true);
+    });
+  };
+
+  const assertIndicatorNotVisible = (): void => {
+    cy.get('body', { timeout: 15000 }).should(($body: JQuery<HTMLElement>) => {
+      const hasText = $body.find('*').filter(':visible').toArray()
+        .some((el: Element) => page.processingStateRegex.test((el.textContent || '').trim()));
+      const $input = $body.find(page.promptInputSelector).filter(':visible').first();
+      const $send  = $body.find(page.sendButtonSelector).filter(':visible').first();
+      const inputDisabled = $input.length > 0 && (
+        $input.is(':disabled') ||
+        String($input.attr('readonly') || '').toLowerCase() === 'readonly' ||
+        String($input.attr('aria-disabled') || '').toLowerCase() === 'true'
+      );
+      const sendDisabled = $send.length > 0 && (
+        $send.is(':disabled') ||
+        String($send.attr('aria-disabled') || '').toLowerCase() === 'true'
+      );
+      expect(hasText && (inputDisabled || sendDisabled), 'processing indicator should not be actively blocking').to.eq(false);
+    });
+  };
+
+  const assertInputLockedOrSendDisabled = (): void => {
+    cy.get('body').then(($body: JQuery<HTMLElement>) => {
+      const $input = $body.find(page.promptInputSelector).filter(':visible').first();
+      const $send  = $body.find(page.sendButtonSelector).filter(':visible').first();
+      const inputLocked = $input.is(':disabled') ||
+        String($input.attr('readonly') || '').toLowerCase() === 'readonly' ||
+        String($input.attr('aria-disabled') || '').toLowerCase() === 'true';
+      const sendLocked = $send.is(':disabled') ||
+        String($send.attr('aria-disabled') || '').toLowerCase() === 'true';
+      expect(inputLocked || sendLocked, 'input locked or send disabled during processing').to.eq(true);
+    });
+  };
+
+  const assertEditSafelyHandled = (): void => {
+    cy.get('body').then(($body: JQuery<HTMLElement>) => {
+      const editModeVisible = $body.find('*').filter(':visible').toArray()
+        .some((el: Element) => page.editModeLabelRegex.test((el.textContent || '').trim()));
+      const $input = $body.find(page.promptInputSelector).filter(':visible').first();
+      const $send  = $body.find(page.sendButtonSelector).filter(':visible').first();
+      const inputDisabled = $input.length > 0 && (
+        $input.is(':disabled') ||
+        String($input.attr('readonly') || '').toLowerCase() === 'readonly' ||
+        String($input.attr('aria-disabled') || '').toLowerCase() === 'true'
+      );
+      const sendDisabled = $send.length > 0 && (
+        $send.is(':disabled') ||
+        String($send.attr('aria-disabled') || '').toLowerCase() === 'true'
+      );
+      expect(!editModeVisible || inputDisabled || sendDisabled, 'edit action safely handled while processing').to.eq(true);
+    });
+  };
+
+  const assertSuggestionsHidden = (): void => {
+    cy.get('body').then(($body: JQuery<HTMLElement>) => {
+      const visible = $body.find(page.suggestionItemSelector).filter(':visible').length;
+      expect(visible, 'suggestions should be hidden during loading').to.eq(0);
+    });
+  };
+
+  // ── Composite setup helpers ───────────────────────────────────────────────
+  // Combines intercept + send + immediate indicator assertion to establish the "actively loading" state used by multiple tests.
+
+  const startLoading = (alias: string, prompt: string, delay = 7000): void => {
+    interceptDelayedSuccess(alias, delay);
+    page.sendPrompt(prompt);
+    assertIndicatorVisible(4000);
+  };
+
+  const waitFor = (alias: string, timeout = 30000): void => {
     cy.wait(`@${alias}`, { timeout });
   };
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   beforeEach(() => {
     page.loginOnceForSuite();
@@ -45,38 +118,28 @@ describe('Input Processing Indicator', () => {
   });
 
   it('C679727 - Verify loading indicator appears immediately after submitting both main and follow-up prompts.', () => {
-    // --- Main prompt ---
-    delayedSuccess('firstSend', 6000);
+    // Main prompt
+    interceptDelayedSuccess('firstSend', 6000);
     page.sendPrompt(`main prompt ${Date.now()}`);
+    assertIndicatorVisible(3000);
+    waitFor('firstSend');
+    assertIndicatorNotVisible();
 
-    // Indicator must be visible right after submission
-    page.assertProcessingIndicatorVisible(3000);
-
-    // Wait for the request to settle, then indicator must be gone
-    waitForRequest('firstSend');
-    page.assertProcessingIndicatorNotVisible();
-
-    // --- Follow-up prompt ---
-    delayedSuccess('secondSend', 6000);
+    // Follow-up prompt
+    interceptDelayedSuccess('secondSend', 6000);
     page.sendPrompt(`follow up prompt ${Date.now()}`);
-
-    page.assertProcessingIndicatorVisible(3000);
-    waitForRequest('secondSend');
-    page.assertProcessingIndicatorNotVisible();
+    assertIndicatorVisible(3000);
+    waitFor('secondSend');
+    assertIndicatorNotVisible();
   });
 
   it('C708144 - Verify the indicator cycles through specific states.', () => {
-    // Use a long delay so we have time to observe multiple state transitions
-    delayedSuccess('stateCycleSend', 12000);
+    interceptDelayedSuccess('stateCycleSend', 12000);
     page.sendPrompt(`state cycle check ${Date.now()}`);
-
-    // Indicator must appear first
-    page.assertProcessingIndicatorVisible(4000);
+    assertIndicatorVisible(4000);
 
     const seen = new Set<string>();
     const expectedStates = ['Data analysis', 'Data extraction', 'Data processing', 'Generating visuals'];
-
-    // Poll body text repeatedly during the delayed window
     cy.wrap(Array.from({ length: 10 })).each(() => {
       cy.get('body').invoke('text').then((bodyText: string) => {
         expectedStates.forEach((state) => {
@@ -85,168 +148,115 @@ describe('Input Processing Indicator', () => {
       });
       cy.wait(1200, { log: false });
     });
-
-    // At least one processing state label must have appeared
     cy.then(() => {
       expect(seen.size, 'at least one processing state label observed').to.be.greaterThan(0);
     });
 
-    waitForRequest('stateCycleSend');
-    page.assertProcessingIndicatorNotVisible();
+    waitFor('stateCycleSend');
+    assertIndicatorNotVisible();
   });
 
   it('C708145 - Verify Ask Here text area is disabled/read-only while processing is active.', () => {
     startLoading('inputLockSend', `lock input check ${Date.now()}`, 7000);
-
-    // While the indicator is active, input OR send must be locked
-    page.assertInputLockedOrSendDisabled();
-
-    waitForRequest('inputLockSend');
-
-    // After processing completes the input must be usable again
-    page.assertProcessingIndicatorNotVisible();
+    assertInputLockedOrSendDisabled();
+    waitFor('inputLockSend');
+    assertIndicatorNotVisible();
     page.messageInput().should('be.visible').and('not.be.disabled');
   });
 
   it('C708207 - Verify Edit prompt action is disabled or safely handled while response is processing.', () => {
-    // Seed a completed message first so the edit icon is available
-    delayedSuccess('seedSend', 1000);
+    // Seed a completed message so the edit icon is available
+    interceptDelayedSuccess('seedSend', 1000);
     page.sendPrompt(`seed for edit action ${Date.now()}`);
-    waitForRequest('seedSend');
-    page.assertProcessingIndicatorNotVisible();
+    waitFor('seedSend');
+    assertIndicatorNotVisible();
 
-    // Start a long in-flight request
     startLoading('loadingSend', `long loading for edit check ${Date.now()}`, 7000);
-
-    // Attempt to click edit while the indicator is still showing
     page.tryOpenEditWhileLoading();
-
-    // The edit action must not leave the UI in a freely submittable state
-    page.assertEditActionSafelyHandledDuringLoading();
-
-    waitForRequest('loadingSend');
-    page.assertProcessingIndicatorNotVisible();
+    assertEditSafelyHandled();
+    waitFor('loadingSend');
+    assertIndicatorNotVisible();
   });
 
   it('C700472 - Verify Send button and Enter key are disabled and duplicate submissions are prevented during loading.', () => {
-    let requestCount = 0;
-    cy.intercept({ method: 'POST', url: page.sendQueryRoute }, (req) => {
-      requestCount += 1;
-      req.continue((res) => { res.setDelay(8000); });
-    }).as('dedupeSend');
-
+    const ref = interceptCounting('dedupeSend', 8000);
     page.sendPrompt(`dedupe check ${Date.now()}`);
-    page.assertProcessingIndicatorVisible(3000);
+    assertIndicatorVisible(3000);
 
-    // Spam Enter and the send button while indicator is active
+    // Attempt duplicate submissions while the indicator is active
     page.pressEnterToSend();
     page.pressEnterToSend();
     page.sendButton().then(($btn: JQuery<HTMLElement>) => {
-      if (!$btn.is(':disabled')) {
-        cy.wrap($btn).click({ force: true });
-      }
+      if (!$btn.is(':disabled')) cy.wrap($btn).click({ force: true });
     });
 
     cy.wait(1000, { log: false });
-
-    // Only the original submission should have been sent
     cy.then(() => {
-      expect(requestCount, 'no duplicate submissions while indicator is active').to.eq(1);
+      expect(ref.count, 'no duplicate submissions while indicator is active').to.eq(1);
     });
-
-    waitForRequest('dedupeSend');
+    waitFor('dedupeSend');
   });
 
   it('C700481 - Verify Send button provides immediate visual feedback upon interaction.', () => {
-    delayedSuccess('visualFeedbackSend', 5000);
-
-    // Capture button state before sending
+    interceptDelayedSuccess('visualFeedbackSend', 5000);
     page.sendButton().then(($before: JQuery<HTMLElement>) => {
       const beforeClass = $before.attr('class') || '';
-
       page.sendPrompt(`visual feedback check ${Date.now()}`);
-
-      // Immediately after sending, button must be visually different (disabled or class changed)
       page.sendButton().should(($after: JQuery<HTMLElement>) => {
-        const afterClass = $after.attr('class') || '';
-        const isDisabled =
-          $after.is(':disabled') ||
+        const isDisabled = $after.is(':disabled') ||
           String($after.attr('aria-disabled') || '').toLowerCase() === 'true';
-
         expect(
-          isDisabled || beforeClass !== afterClass,
+          isDisabled || ($after.attr('class') || '') !== beforeClass,
           'send button provides immediate visual feedback'
         ).to.eq(true);
       });
     });
-
-    waitForRequest('visualFeedbackSend');
+    waitFor('visualFeedbackSend');
   });
 
   it('C708206 - Verify loading indicator disappears immediately after a successful response is rendered.', () => {
-    delayedSuccess('successDisappearSend', 4000);
+    interceptDelayedSuccess('successDisappearSend', 4000);
     page.sendPrompt(`indicator disappear check ${Date.now()}`);
-
-    // Indicator must appear during processing
-    page.assertProcessingIndicatorVisible(3000);
-
-    // Once the request completes the indicator must clear
-    waitForRequest('successDisappearSend');
-    page.assertProcessingIndicatorNotVisible();
+    assertIndicatorVisible(3000);
+    waitFor('successDisappearSend');
+    assertIndicatorNotVisible();
   });
 
   it('C679737 - Verify loading indicator is cleared and not stuck after processing failure.', () => {
-    delayedFailure('failureClearSend', 3000, 500);
+    interceptDelayedFailure('failureClearSend', 3000, 500);
     page.sendPrompt(`failure clear check ${Date.now()}`);
-
-    // Indicator must appear during the (delayed) failing request
-    page.assertProcessingIndicatorVisible(3000);
-
-    // After the error response, indicator must clear and input must recover
-    waitForRequest('failureClearSend');
-    page.assertProcessingIndicatorNotVisible();
+    assertIndicatorVisible(3000);
+    waitFor('failureClearSend');
+    assertIndicatorNotVisible();
     page.messageInput().should('be.visible');
   });
 
   it('C700464 - Verify suggestions are not shown during loading state.', () => {
-    delayedSuccess('noSuggestionSend', 7000);
+    interceptDelayedSuccess('noSuggestionSend', 7000);
     page.sendPrompt(`suggestion hidden check ${Date.now()}`);
-
-    // Indicator must be active
-    page.assertProcessingIndicatorVisible(3000);
-
-    // Suggestion list must not appear while indicator is active
-    page.assertSuggestionsHiddenDuringLoading();
-
-    waitForRequest('noSuggestionSend');
-    page.assertProcessingIndicatorNotVisible();
+    assertIndicatorVisible(3000);
+    assertSuggestionsHidden();
+    waitFor('noSuggestionSend');
+    assertIndicatorNotVisible();
   });
 
   it('C700488 - Verify loading state is session-specific (single-tab emulation in Cypress).', () => {
-    // Cypress cannot control two tabs; we emulate by navigating to a new chat
+    // Cypress cannot control two tabs; emulate by navigating to a new chat
     // while the original request is still in-flight.
     let sessionA = '';
 
-    delayedSuccess('sessionSpecificSend', 9000);
+    interceptDelayedSuccess('sessionSpecificSend', 9000);
     page.sendPrompt(`session specific check ${Date.now()}`);
-    page.assertProcessingIndicatorVisible(3000);
+    assertIndicatorVisible(3000);
 
     cy.location('search').then((search: string) => {
       sessionA = new URLSearchParams(search).get('sessionId') || '';
     });
 
-    // Navigate to new chat (simulates switching to "Tab B")
-    cy.contains('button, [role="button"], a', /\+?\s*new\s*chat/i)
-      .filter(':visible')
-      .first()
-      .click({ force: true });
-
+    page.clickNewChat();
     page.waitForChatReady();
+    assertIndicatorNotVisible();
 
-    // The new chat must show no active indicator
-    page.assertProcessingIndicatorNotVisible();
-
-    // If the URL exposes a session ID it must differ from the original
     cy.location('search').then((search: string) => {
       const sessionB = new URLSearchParams(search).get('sessionId') || '';
       if (sessionA && sessionB && sessionB !== sessionA) {
@@ -254,12 +264,11 @@ describe('Input Processing Indicator', () => {
       }
     });
 
-    // New chat must remain fully interactive while the original request is in-flight
     const probeText = `session B idle check ${Date.now()}`;
     page.typePrompt(probeText);
     page.readInputValue().should('include', probeText);
 
-    waitForRequest('sessionSpecificSend');
+    waitFor('sessionSpecificSend');
   });
 
   it.skip('T873883 - Verify loading state is isolated across two real browser tabs.', () => {
@@ -268,51 +277,38 @@ describe('Input Processing Indicator', () => {
   });
 
   it('C700498 - Verify loading indicator does not reappear after response is rendered.', () => {
-    delayedSuccess('noReappearSend', 3500);
+    interceptDelayedSuccess('noReappearSend', 3500);
     page.sendPrompt(`no reappear check ${Date.now()}`);
-
-    page.assertProcessingIndicatorVisible(3000);
-
-    waitForRequest('noReappearSend');
-    page.assertProcessingIndicatorNotVisible();
-
-    // Extra wait to confirm indicator stays gone (no re-flash)
+    assertIndicatorVisible(3000);
+    waitFor('noReappearSend');
+    assertIndicatorNotVisible();
     cy.wait(2000, { log: false });
-    page.assertProcessingIndicatorNotVisible();
+    assertIndicatorNotVisible();
   });
 
   it('C708208 - Verify chat history and previous messages remain visible and accessible during loading.', () => {
-    // Seed a completed message
-    delayedSuccess('seedHistorySend', 1000);
+    interceptDelayedSuccess('seedHistorySend', 1000);
     const firstPrompt = `history accessibility seed ${Date.now()}`;
     page.sendPrompt(firstPrompt);
-    waitForRequest('seedHistorySend');
-    page.assertProcessingIndicatorNotVisible();
+    waitFor('seedHistorySend');
+    assertIndicatorNotVisible();
 
-    // Start a long in-flight request
-    delayedSuccess('loadingHistorySend', 7000);
+    interceptDelayedSuccess('loadingHistorySend', 7000);
     page.sendPrompt(`second prompt while loading ${Date.now()}`);
-    page.assertProcessingIndicatorVisible(3000);
-
-    // Previous message must still be visible while indicator is active
+    assertIndicatorVisible(3000);
     cy.contains(firstPrompt).should('be.visible');
-
-    // History panel must be accessible during loading
     page.openHistoryPanel();
-
-    waitForRequest('loadingHistorySend');
+    waitFor('loadingHistorySend');
   });
 
   it('C679732 - Verify UI recovers gracefully when processing exceeds timeout or after failure.', () => {
-    delayedFailure('timeoutRecoverySend', 8000, 504);
+    interceptDelayedFailure('timeoutRecoverySend', 8000, 504);
     page.sendPrompt(`timeout recovery check ${Date.now()}`);
-
-    page.assertProcessingIndicatorVisible(3000);
-
-    // After the simulated gateway timeout, all UI controls must recover
-    waitForRequest('timeoutRecoverySend');
-    page.assertProcessingIndicatorNotVisible();
+    assertIndicatorVisible(3000);
+    waitFor('timeoutRecoverySend');
+    assertIndicatorNotVisible();
     page.messageInput().should('be.visible');
     page.sendButton().should('be.visible');
   });
 });
+

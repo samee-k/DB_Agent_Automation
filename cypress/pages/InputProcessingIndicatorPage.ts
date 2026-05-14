@@ -4,8 +4,9 @@ export class InputProcessingIndicatorPage {
   readonly chatPath = Cypress.env('chatPath') ?? '/dbagent/11/chat';
   readonly sendQueryRoute = '**/api/chats/*/send-query';
   readonly processingStateRegex = /Data analysis|Data extraction|Data processing|Generating visuals/i;
+  readonly editModeLabelRegex = /Edit your prompt/i;
 
-  private readonly promptInputSelector = [
+  readonly promptInputSelector = [
     '#dbagent-textarea',
     'textarea.dbagent-textarea',
     'textarea[id="dbagent-textarea"]',
@@ -21,7 +22,7 @@ export class InputProcessingIndicatorPage {
     '.ql-editor',
   ].join(', ');
 
-  private readonly sendButtonSelector = [
+  readonly sendButtonSelector = [
     '[data-cy="send-button"]',
     'button[aria-label="Send"][type="button"]',
     'button[aria-label*="Send"]',
@@ -52,7 +53,7 @@ export class InputProcessingIndicatorPage {
     '.user-query',
   ].join(', ');
 
-  readonly editModeLabelRegex = /Edit your prompt/i;
+  // ── Navigation ────────────────────────────────────────────────────────────
 
   loginOnceForSuite() {
     cy.loginBySession();
@@ -74,6 +75,16 @@ export class InputProcessingIndicatorPage {
     return this;
   }
 
+  clickNewChat() {
+    cy.contains('button, [role="button"], a', /\+?\s*new\s*chat/i)
+      .filter(':visible')
+      .first()
+      .click({ force: true });
+    return this;
+  }
+
+  // ── Element accessors ─────────────────────────────────────────────────────
+
   messageInput(): Cypress.Chainable<JQuery<HTMLElement>> {
     return cy.get(this.promptInputSelector, { timeout: 20000 }).filter(':visible').first();
   }
@@ -86,16 +97,14 @@ export class InputProcessingIndicatorPage {
     return this.messageInput().then(($input: JQuery<HTMLElement>) => {
       const el = $input[0] as HTMLElement;
       const isContentEditable = el.getAttribute('contenteditable') === 'true' || el.isContentEditable;
-      if (isContentEditable) {
-        return ($input.text() || '').trim();
-      }
+      if (isContentEditable) return ($input.text() || '').trim();
       const raw = $input.val();
-      if (Array.isArray(raw)) {
-        return raw.join(' ').trim();
-      }
+      if (Array.isArray(raw)) return raw.join(' ').trim();
       return String(raw ?? '').trim();
     });
   }
+
+  // ── User actions ──────────────────────────────────────────────────────────
 
   typePrompt(text: string) {
     this.messageInput().then(($input: JQuery<HTMLElement>) => {
@@ -128,80 +137,6 @@ export class InputProcessingIndicatorPage {
     return this;
   }
 
-  assertProcessingIndicatorVisible(timeout = 8000) {
-    cy.get('body', { timeout }).should(($body: JQuery<HTMLElement>) => {
-      const hasVisibleProcessingText = $body
-        .find('*')
-        .filter(':visible')
-        .toArray()
-        .some((el: Element) => this.processingStateRegex.test((el.textContent || '').trim()));
-
-      expect(hasVisibleProcessingText, 'processing indicator should be visible').to.eq(true);
-    });
-    return this;
-  }
-
-  assertProcessingIndicatorNotVisible() {
-    cy.get('body', { timeout: 15000 }).should(($body: JQuery<HTMLElement>) => {
-      const hasProcessingTextVisible = $body
-        .find('*')
-        .filter(':visible')
-        .toArray()
-        .some((el: Element) => this.processingStateRegex.test((el.textContent || '').trim()));
-
-      const $input = $body.find(this.promptInputSelector).filter(':visible').first();
-      const $send = $body.find(this.sendButtonSelector).filter(':visible').first();
-
-      const inputDisabled =
-        $input.length > 0 &&
-        (
-          $input.is(':disabled') ||
-          String($input.attr('readonly') || '').toLowerCase() === 'readonly' ||
-          String($input.attr('aria-disabled') || '').toLowerCase() === 'true'
-        );
-
-      const sendDisabled =
-        $send.length > 0 &&
-        (
-          $send.is(':disabled') ||
-          String($send.attr('aria-disabled') || '').toLowerCase() === 'true'
-        );
-
-      // Treat as "not actively processing" once controls are usable,
-      // even if residual processing text remains in the DOM briefly.
-      const activelyBlocking = hasProcessingTextVisible && (inputDisabled || sendDisabled);
-      expect(activelyBlocking, 'processing indicator should not be actively blocking').to.eq(false);
-    });
-    return this;
-  }
-
-  assertInputLockedOrSendDisabled() {
-    cy.get('body').then(($body: JQuery<HTMLElement>) => {
-      const $input = $body.find(this.promptInputSelector).filter(':visible').first();
-      const $send = $body.find(this.sendButtonSelector).filter(':visible').first();
-
-      const inputDisabled =
-        $input.is(':disabled') ||
-        String($input.attr('readonly') || '').toLowerCase() === 'readonly' ||
-        String($input.attr('aria-disabled') || '').toLowerCase() === 'true';
-
-      const sendDisabled =
-        $send.is(':disabled') ||
-        String($send.attr('aria-disabled') || '').toLowerCase() === 'true';
-
-      expect(inputDisabled || sendDisabled, 'input locked or send disabled during processing').to.eq(true);
-    });
-    return this;
-  }
-
-  assertSuggestionsHiddenDuringLoading() {
-    cy.get('body').then(($body: JQuery<HTMLElement>) => {
-      const visible = $body.find(this.suggestionItemSelector).filter(':visible').length;
-      expect(visible, 'suggestions should be hidden during loading').to.eq(0);
-    });
-    return this;
-  }
-
   hoverLastUserMessage() {
     cy.get(this.userMessageSelector).filter(':visible').last().realHover();
     cy.wait(250);
@@ -212,44 +147,7 @@ export class InputProcessingIndicatorPage {
     this.hoverLastUserMessage();
     cy.get('body').then(($body: JQuery<HTMLElement>) => {
       const $edit = $body.find(this.editIconSelector).filter(':visible').first();
-      if ($edit.length > 0) {
-        cy.wrap($edit).click({ force: true });
-      }
-    });
-    return this;
-  }
-
-  assertEditActionSafelyHandledDuringLoading() {
-    cy.get('body').then(($body: JQuery<HTMLElement>) => {
-      const editModeVisible = $body
-        .find('*')
-        .filter(':visible')
-        .toArray()
-        .some((el: Element) => this.editModeLabelRegex.test((el.textContent || '').trim()));
-
-      const $input = $body.find(this.promptInputSelector).filter(':visible').first();
-      const $send = $body.find(this.sendButtonSelector).filter(':visible').first();
-
-      const inputDisabled =
-        $input.length > 0 &&
-        (
-          $input.is(':disabled') ||
-          String($input.attr('readonly') || '').toLowerCase() === 'readonly' ||
-          String($input.attr('aria-disabled') || '').toLowerCase() === 'true'
-        );
-
-      const sendDisabled =
-        $send.length > 0 &&
-        (
-          $send.is(':disabled') ||
-          String($send.attr('aria-disabled') || '').toLowerCase() === 'true'
-        );
-
-      // Safe handling criteria:
-      // 1) edit mode does not open, or
-      // 2) edit mode appears but input/send remains non-interactive while processing.
-      const safelyHandled = !editModeVisible || inputDisabled || sendDisabled;
-      expect(safelyHandled, 'edit action safely handled while processing').to.eq(true);
+      if ($edit.length > 0) cy.wrap($edit).click({ force: true });
     });
     return this;
   }
