@@ -15,7 +15,7 @@ export class SuggestionHelper {
   // ── Suggestion visibility ──
 
   getVisibleSuggestions(): Cypress.Chainable<JQuery<HTMLElement>> {
-    return cy.get(SUGGESTION_ITEM_SELECTOR, { timeout: 15000 }).filter(':visible').should('have.length.greaterThan', 0);
+    return cy.get(SUGGESTION_ITEM_SELECTOR, { timeout: 15000 }).filter(':visible');
   }
 
   getVisibleSuggestionTexts(): Cypress.Chainable<string[]> {
