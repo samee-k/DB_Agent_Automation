@@ -136,11 +136,15 @@ describe('Login Feature (15/15 test cases)', () => {
   // These 4 tests must submit real credentials and assert on the outcome.
   // All other cases have been handled above without a server round-trip.
   // ─────────────────────────────────────────────────────────────────────────
+  // Retry config for network-dependent tests: 1 retry in CI (runMode), none in interactive mode.
+  // Only applied to Authentication Flows — DOM-only and client-side tests should never need retries.
+  const networkRetry: Cypress.TestConfigOverrides = { retries: { runMode: 1, openMode: 0 } };
+
   describe('Authentication Flows', () => {
     beforeEach(() => loginPage.visitPage());
 
     // C669527 - Wrong credentials blocked & Show Invalid Login Credentials.
-    it("C669527 - Verify that the user cannot login with invalid credentials and receives the 'Invalid Login Credentials' pop-up.", () => {
+    it("C669527 - Verify that the user cannot login with invalid credentials and receives the 'Invalid Login Credentials' pop-up.", networkRetry, () => {
       // Suppress only the known 401 client-side exception thrown by the app's HTTP client
       cy.on('uncaught:exception', (err: Error) =>
         /request failed with status code 401/i.test(err.message) ? false : true
@@ -152,20 +156,20 @@ describe('Login Feature (15/15 test cases)', () => {
     });
 
     // C669528 - Valid credentials allowed
-    it('C669528 - Verify that the user should be allowed to login with Valid Email and Password.', () => {
+    it('C669528 - Verify that the user should be allowed to login with Valid Email and Password.', networkRetry, () => {
       submitLogin(validEmail, validPassword);
       assertLoginSuccess();
     });
 
     // C688019 - Leading/trailing spaces trimmed for Email
-    it('C688019 - Verify that leading/trailing spaces are trimmed for Email during login', () => {
+    it('C688019 - Verify that leading/trailing spaces are trimmed for Email during login', networkRetry, () => {
       expect(validEmail, 'USER_EMAIL must be configured').to.not.equal('');
       submitLogin(`  ${validEmail}  `, validPassword);
       assertLoginSuccess();
     });
 
     // C715142 - Login with Enter key
-    it('C715142 - Verify user should be allowed to trigger login action pressing Enter from the password field', () => {
+    it('C715142 - Verify user should be allowed to trigger login action pressing Enter from the password field', networkRetry, () => {
       fillCredentials(validEmail, validPassword);
       loginPage.submitWithEnterFromPassword();
       assertLoginSuccess();
