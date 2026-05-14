@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+import { CHAT_INPUT_SELECTOR, SEND_BUTTON_SELECTOR } from './CommonSelectors';
+
 export class ChatHistoryPage {
   // TODO(QA-DATACY): Replace every fallback selector with data-cy once available.
   private readonly historyToggle = [
@@ -144,25 +146,9 @@ export class ChatHistoryPage {
     '[class*="welcome-container"]',
   ].join(', ');
 
-  private readonly chatInput = [
-    '#dbagent-textarea',
-    'textarea.dbagent-textarea',
-    '[data-cy="chat-input"]',
-    'textarea.chat-input',
-    'textarea[placeholder*="Ask here" i]',
-    '[role="textbox"][placeholder*="Ask here" i]',
-    '[data-testid="chat-input"]',
-    '[data-testid="message-input"]',
-    '[role="textbox"]',
-    '[contenteditable="true"]',
-    '.ProseMirror',
-    '.ql-editor',
-  ].join(', ');
+  private readonly chatInputSelector = CHAT_INPUT_SELECTOR;
 
-  private readonly sendButton = [
-    '[data-cy="send-button"]',
-    'button[aria-label="Send"]',
-  ].join(', ');
+  private readonly sendButtonSelector = SEND_BUTTON_SELECTOR;
 
   private readonly newChatButton = [
     '[data-cy="new-chat-button"]',
@@ -174,46 +160,8 @@ export class ChatHistoryPage {
 
   readonly chatPath = Cypress.env('chatPath') || `/dbagent/${Cypress.env('projectId') || '11'}/chat`;
 
-  visitChatPage() {
+  visit() {
     cy.visit(this.chatPath);
-    return this;
-  }
-
-  setupAuthHeaderCheck() {
-    cy.intercept('GET', '**/api/chats/**', (req) => {
-      const authHeader = String(req.headers.authorization || '').trim();
-      // App auth can be bearer-token or session/cookie based depending on build/runtime.
-      if (authHeader.length > 0) {
-        expect(/^Bearer\s+/i.test(authHeader), 'authorization header format').to.eq(true);
-      }
-    }).as('chatAuthHeader');
-    return this;
-  }
-
-  interceptGetChatsByProject() {
-    const projectId = Cypress.env('projectId') || '11';
-    cy.intercept('GET', `**/api/chats/by-project/${projectId}*`).as('getChatsByProject');
-    return this;
-  }
-
-  interceptUpdateTitle() {
-    cy.intercept('PATCH', '**/api/chats/*/update-title').as('updateChatTitle');
-    return this;
-  }
-
-  interceptDeleteChat() {
-    cy.intercept('DELETE', '**/api/chats/*').as('deleteChat');
-    return this;
-  }
-
-  interceptSendQuery() {
-    cy.intercept('POST', /\/api\/chats(?:\/[^/?#]+)?\/send-query(?:\?.*)?$/).as('sendQuery');
-    return this;
-  }
-
-  interceptSearchByProject() {
-    const projectId = Cypress.env('projectId') || '11';
-    cy.intercept('GET', `**/api/chats/by-project/${projectId}?search=*`).as('searchChatsByProject');
     return this;
   }
 
@@ -268,8 +216,7 @@ export class ChatHistoryPage {
     return this;
   }
 
-  updateTitle(newTitle: string) {
-    this.typeEditTitle(newTitle);
+  clickEditUpdate() {
     cy.get(this.editUpdate).first().click({ force: true });
     return this;
   }
@@ -340,7 +287,7 @@ export class ChatHistoryPage {
   }
 
   typeInChatPrompt(prompt: string) {
-    cy.get(this.chatInput)
+    cy.get(this.chatInputSelector)
       .filter(':visible')
       .first()
       .clear({ force: true })
@@ -350,11 +297,11 @@ export class ChatHistoryPage {
 
   clickSendButton() {
     cy.get('body').then(($body: JQuery<HTMLElement>) => {
-      const visibleSend = $body.find(this.sendButton).filter(':visible').first();
+      const visibleSend = $body.find(this.sendButtonSelector).filter(':visible').first();
       if (visibleSend.length > 0) {
         cy.wrap(visibleSend).click({ force: true });
       } else {
-        cy.get(this.chatInput)
+        cy.get(this.chatInputSelector)
           .filter(':visible')
           .first()
           .type('{enter}', { force: true });
@@ -417,18 +364,6 @@ export class ChatHistoryPage {
     });
   }
 
-  waitForPanelVisible(timeout = 15000) {
-    return this.getPanel(timeout).should(($panel: JQuery<HTMLElement>) => {
-      const panel = $panel[0] as HTMLElement;
-      const style = window.getComputedStyle(panel);
-      const isDisplayed = style.display !== 'none' && style.visibility !== 'hidden';
-      const hasOpacity = Number.parseFloat(style.opacity || '1') > 0.01;
-      const hasLayout = panel.getBoundingClientRect().width > 0 && panel.getBoundingClientRect().height > 0;
-
-      expect(isDisplayed && hasOpacity && hasLayout, 'history panel should be visibly rendered').to.eq(true);
-    });
-  }
-
   getHistoryItems() {
     return cy.get(this.historyItems);
   }
@@ -442,13 +377,6 @@ export class ChatHistoryPage {
 
   getHistoryItemCount() {
     return this.getHistoryItemsOptional().its('length');
-  }
-
-  waitForHistoryItemCountAtLeast(minCount: number, timeout = 20000) {
-    return this.getPanel(timeout).should(($panel: JQuery<HTMLElement>) => {
-      const count = $panel.find(this.historyItems).length;
-      expect(count, `history items count >= ${minCount}`).to.be.gte(minCount);
-    });
   }
 
   getSelectedItemCount() {
@@ -514,6 +442,12 @@ export class ChatHistoryPage {
       });
   }
 
+  getEmptyStateOptional() {
+    return this.getPanel().then(($panel: JQuery<HTMLElement>) => {
+      return $panel.find(this.emptyStateTitle);
+    });
+  }
+
   getSearchInput() {
     return cy.get(this.searchInput).first();
   }
@@ -545,6 +479,12 @@ export class ChatHistoryPage {
   getWelcomeContent() {
     // No .first() — allows .should('not.exist') to work when selector matches nothing
     return cy.get(this.welcomeContent);
+  }
+
+  getWelcomeContentOptional() {
+    return cy.get('body').then(($body: JQuery<HTMLElement>) => {
+      return $body.find(this.welcomeContent);
+    });
   }
 
   getPanelScrollTop() {
