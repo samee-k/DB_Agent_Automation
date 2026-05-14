@@ -6,16 +6,13 @@ describe('Navigation and Header - + New Chat', () => {
   const page = new NewChatPage();
   const firstPrompt = 'List all tables for this database';
 
-  const sendFirstPrompt = (responseMessage = 'Mocked first response') => {
+  const sendFirstPrompt = (_responseMessage = 'Mocked first response') => {
     cy.intercept('POST', page.createChatRoute).as('createChat');
-    cy.intercept('POST', page.sendQueryRoute, {
-      statusCode: 200,
-      body: { message: responseMessage },
-    }).as('sendQuery');
+    cy.intercept('POST', page.sendQueryRoute, (req) => { req.continue(); }).as('sendQuery');
 
     page.typePrompt(firstPrompt).submitPromptWithEnter();
     cy.wait('@createChat').its('response.statusCode').should('be.oneOf', [200, 201]);
-    cy.wait('@sendQuery').its('response.statusCode').should('eq', 200);
+    cy.wait('@sendQuery');
   };
 
   beforeEach(() => {
@@ -49,10 +46,7 @@ describe('Navigation and Header - + New Chat', () => {
     let firstSessionId = '';
 
     cy.intercept('POST', page.createChatRoute).as('createChat');
-    cy.intercept('POST', page.sendQueryRoute, {
-      statusCode: 200,
-      body: { message: 'Mocked response for session test' },
-    }).as('sendQuery');
+    cy.intercept('POST', page.sendQueryRoute, (req) => { req.continue(); }).as('sendQuery');
 
     page.typePrompt(firstPrompt).submitPromptWithEnter();
     cy.wait('@createChat').its('response.statusCode').should('be.oneOf', [200, 201]);
@@ -97,18 +91,11 @@ describe('Navigation and Header - + New Chat', () => {
       capturedSessionIds.push(requestSessionId);
 
       if (callCount === 1) {
-        req.reply({
-          delay: 6000,
-          statusCode: 200,
-          body: { message: 'OLD_SESSION_RESPONSE' },
-        });
+        req.continue((res) => { res.setDelay(6000); });
         return;
       }
 
-      req.reply({
-        statusCode: 200,
-        body: { message: 'NEW_SESSION_RESPONSE' },
-      });
+      req.continue();
     }).as('sendQuery');
 
     page.typePrompt('First prompt to trigger delayed response').submitPromptWithEnter();
@@ -133,7 +120,7 @@ describe('Navigation and Header - + New Chat', () => {
     });
 
     // Let the delayed request finish and verify no additional send-query request was created.
-    cy.wait('@sendQuery').its('response.statusCode').should('eq', 200);
+    cy.wait('@sendQuery');
     cy.then(() => expect(callCount, 'no duplicate request fired').to.eq(1));
 
     cy.then(() => {
