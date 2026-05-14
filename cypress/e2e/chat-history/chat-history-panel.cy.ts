@@ -135,7 +135,7 @@ describe('Chat History — Panel', () => {
         expect(headerTitle.trim()).to.eq(normalizedTitle);
       });
       // Panel must still be visible (app uses in-place navigation)
-      page.getPanel().should('be.visible');
+      page.waitForPanelVisible();
     });
   });
 
@@ -218,7 +218,7 @@ describe('Chat History — Panel', () => {
 
     // App uses in-place navigation — URL never changes to a per-chat path.
     cy.location('pathname').should('include', '/chat');
-    page.getPanel().should('be.visible');
+    page.waitForPanelVisible();
   });
 
   // ---------------------------------------------------------------------------
@@ -236,9 +236,12 @@ describe('Chat History — Panel', () => {
       if (Array.isArray(body)) return body;
       if (Array.isArray(body?.data)) return body.data;
       if (Array.isArray(body?.data?.chats)) return body.data.chats;
+      if (Array.isArray(body?.data?.items)) return body.data.items;
+      if (Array.isArray(body?.data?.data)) return body.data.data;
+      if (Array.isArray(body?.data?.records)) return body.data.records;
       if (Array.isArray(body?.chats)) return body.chats;
       if (Array.isArray(body?.items)) return body.items;
-      if (Array.isArray(body?.data?.items)) return body.data.items;
+      if (Array.isArray(body?.records)) return body.records;
       return [];
     };
 
@@ -250,7 +253,12 @@ describe('Chat History — Panel', () => {
       if (!body || Array.isArray(body)) return { data: { chats: nextList } };
       if (Array.isArray(body?.data)) { body.data = nextList; patchCount(body); return body; }
       if (Array.isArray(body?.data?.chats)) { body.data.chats = nextList; patchCount(body.data); return body; }
+      if (Array.isArray(body?.data?.items)) { body.data.items = nextList; patchCount(body.data); return body; }
+      if (Array.isArray(body?.data?.data)) { body.data.data = nextList; patchCount(body.data); return body; }
+      if (Array.isArray(body?.data?.records)) { body.data.records = nextList; patchCount(body.data); return body; }
       if (Array.isArray(body?.chats)) { body.chats = nextList; patchCount(body); return body; }
+      if (Array.isArray(body?.items)) { body.items = nextList; patchCount(body); return body; }
+      if (Array.isArray(body?.records)) { body.records = nextList; patchCount(body); return body; }
       body.data = { ...(body.data || {}), chats: nextList };
       return body;
     };

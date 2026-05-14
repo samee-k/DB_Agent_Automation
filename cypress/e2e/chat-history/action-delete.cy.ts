@@ -25,7 +25,7 @@ describe('Chat History — Action (Delete)', () => {
       cy.wait(`@${ALIASES.deleteChat}`).its('response.statusCode').should('eq', 200);
 
       page.getHistoryItems().its('length').should('be.lessThan', initialCount);
-      page.getPanel().should('be.visible');
+      page.waitForPanelVisible();
     });
   });
 
@@ -53,7 +53,7 @@ describe('Chat History — Action (Delete)', () => {
       page.cancelDelete();
 
       page.getHistoryItems().its('length').should('eq', initialCount);
-      page.getPanel().should('be.visible');
+      page.waitForPanelVisible();
     });
   });
 
@@ -65,7 +65,7 @@ describe('Chat History — Action (Delete)', () => {
       cy.wait(`@${ALIASES.deleteChat}`).its('response.statusCode').should('eq', 200);
 
       page.getHistoryItems().its('length').should('be.lessThan', initialCount);
-      page.getPanel().should('be.visible');
+      page.waitForPanelVisible();
     });
   });
 
@@ -80,7 +80,7 @@ describe('Chat History — Action (Delete)', () => {
     page.confirmDelete();
     cy.wait(`@${ALIASES.deleteChat}`).its('response.statusCode').should('eq', 200);
 
-    page.getPanel().should('be.visible');
+    page.waitForPanelVisible();
     page.getSelectedItemsOptional().then(($selected) => {
       expect($selected.length).to.eq(0);
     });
