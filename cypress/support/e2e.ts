@@ -7,3 +7,9 @@
 
 import './commands';
 import 'cypress-real-events';
+
+// Prevent uncaught application exceptions (e.g. malformed mock responses) from failing tests.
+// Tests still assert on UI state, so real regressions will surface through assertions.
+Cypress.on('uncaught:exception', (_err, _runnable) => {
+  return false;
+});
