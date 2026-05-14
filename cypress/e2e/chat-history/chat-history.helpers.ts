@@ -35,7 +35,8 @@ export function interceptUpdateTitle(): void {
 }
 
 export function interceptSendQuery(): void {
-  cy.intercept('POST', '**/api/chats/*/send-query').as(ALIASES.sendQuery);
+  // Regex handles optional chat-ID segment and query strings: /api/chats/{id}/send-query?...
+  cy.intercept('POST', /\/api\/chats(?:\/[^/?#]+)?\/send-query(?:\?.*)?$/).as(ALIASES.sendQuery);
 }
 
 // ---------------------------------------------------------------------------
@@ -43,6 +44,9 @@ export function interceptSendQuery(): void {
 //   register intercepts → visit → wait for list → seed if empty → revisit.
 // ---------------------------------------------------------------------------
 export function seedAndVisit(page: ChatHistoryPage): void {
+  // Validate that every chat API request carries a Bearer token (auth regression guard).
+  page.setupAuthHeaderCheck();
+
   interceptGetChats();
   interceptDeleteChat();
   page.visit();
