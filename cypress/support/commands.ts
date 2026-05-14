@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { loginByApiWithEnv, loginBySessionUi } from '../services/api/auth.service';
+import { loginBySessionUi } from '../services/api/auth.service';
 import {
   clearChatsByProjectViaApiService,
   ensureChatsByProjectMinCountService,
@@ -9,10 +9,6 @@ import {
 
 export function loginBySession() {
 	loginBySessionUi();
-}
-
-export function loginByApi() {
-	loginByApiWithEnv();
 }
 
 export function clearChatsByProjectViaApi() {
@@ -33,23 +29,6 @@ type CommandName = keyof Cypress.Chainable<void>;
 
 Cypress.Commands.add('loginBySession' as CommandName, () => {
 	loginBySession();
-});
-
-Cypress.Commands.add('loginByApi' as CommandName, () => {
-	loginByApi();
-});
-
-Cypress.Commands.add('loginByApiSession' as CommandName, () => {
-	cy.session('api-login-session', () => {
-		loginByApi();
-	}, {
-		validate() {
-			cy.window().then((windowObject: Window) => {
-				const token = windowObject.localStorage.getItem('access_token');
-				expect(token, 'access_token in localStorage').to.be.a('string').and.not.be.empty;
-			});
-		},
-	});
 });
 
 Cypress.Commands.add('clearChatsByProjectViaApi' as CommandName, () => {
