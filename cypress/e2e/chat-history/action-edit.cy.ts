@@ -1,223 +1,233 @@
 /// <reference types="cypress" />
 
 import { ChatHistoryPage } from '../../pages/ChatHistoryPage';
+import {
+  ALIASES,
+  interceptUpdateTitle,
+  seedAndVisit,
+} from './chat-history.helpers';
 
-describe('Action (Edit)', () => {
-  const chatHistoryPage = new ChatHistoryPage();
+describe('Chat History — Action (Edit)', () => {
+  const page = new ChatHistoryPage();
 
-  const ensureMinHistoryItems = (minimumCount: number): Cypress.Chainable<any> => {
-    return chatHistoryPage.getHistoryItemCount().then((count: number) => {
-      expect(count, `history items available for test (need at least ${minimumCount})`).to.be.gte(minimumCount);
+  // Guard: skip the test body (not fail) if fewer items are available than required.
+  const requireMinItems = (min: number): Cypress.Chainable<any> =>
+    page.getHistoryItemCount().then((count: number) => {
+      expect(count, `need at least ${min} history items for this test`).to.be.gte(min);
     });
-  };
 
+  // TODO(QA-BACKEND): Replace API seeding with deterministic cleanup endpoint when available.
   beforeEach(() => {
-    // TODO(QA-BACKEND): Enable deterministic cleanup when backend endpoint is available.
-    // cy.request('POST', '/api/test/cleanup');
-
-    cy.loginByApiSession();
-
-    chatHistoryPage.interceptGetChatsByProject();
-    chatHistoryPage.interceptUpdateTitle();
-    chatHistoryPage.visitChatPage();
-    cy.wait('@getChatsByProject').its('response.statusCode').should('eq', 200);
-
-    cy.seedChatsByProjectViaApiIfEmpty(5, 20);
-    chatHistoryPage.interceptGetChatsByProject();
-    chatHistoryPage.visitChatPage();
-    cy.wait('@getChatsByProject').its('response.statusCode').should('eq', 200);
-
-    chatHistoryPage.openHistoryPanel();
-    chatHistoryPage.waitForHistoryItemCountAtLeast(1);
+    cy.loginBySession();
+    interceptUpdateTitle();
+    seedAndVisit(page);
   });
 
   it('C698110 - Verify that the user can edit the chat title.', () => {
-    cy.fixture('chatHistory').then((chatHistoryData: any) => {
-      const uniqueTitle = `${chatHistoryData.updatedTitle} ${Date.now()}`;
-      chatHistoryPage.openHistoryMenuByIndex(0);
-      chatHistoryPage.clickEditAction();
-      chatHistoryPage.updateTitle(uniqueTitle);
+    cy.fixture('chatHistory').then((data: any) => {
+      const uniqueTitle = `${data.updatedTitle} ${Date.now()}`;
 
-      cy.wait('@updateChatTitle').then((interception: any) => {
+      page.openHistoryMenuByIndex(0);
+      page.clickEditAction();
+      page.typeEditTitle(uniqueTitle);
+      page.clickEditUpdate();
+
+      cy.wait(`@${ALIASES.updateTitle}`).then((interception: any) => {
         expect(interception.response?.statusCode).to.eq(200);
         expect(interception.response?.body?.data?.title).to.eq(uniqueTitle);
       });
 
-      chatHistoryPage.getHistoryItemByIndex(0).should('contain.text', uniqueTitle);
+      page.getHistoryItemByIndex(0).should('contain.text', uniqueTitle);
     });
   });
 
-  it('C698124 - Verify that editing the chat title can handle special characters.', () => {
-    cy.fixture('chatHistory').then((chatHistoryData: any) => {
-      chatHistoryPage.openHistoryMenuByIndex(0);
-      chatHistoryPage.clickEditAction();
-      chatHistoryPage.updateTitle(chatHistoryData.specialCharTitle);
+  it('C698124 - Verify that editing the chat title handles special characters correctly.', () => {
+    cy.fixture('chatHistory').then((data: any) => {
+      page.openHistoryMenuByIndex(0);
+      page.clickEditAction();
+      page.typeEditTitle(data.specialCharTitle);
+      page.clickEditUpdate();
 
-      cy.wait('@updateChatTitle').then((interception: any) => {
+      cy.wait(`@${ALIASES.updateTitle}`).then((interception: any) => {
         expect(interception.response?.statusCode).to.eq(200);
-        expect(interception.response?.body?.data?.title).to.eq(chatHistoryData.specialCharTitle);
+        expect(interception.response?.body?.data?.title).to.eq(data.specialCharTitle);
       });
 
-      chatHistoryPage.getHistoryItemByIndex(0).should('contain.text', chatHistoryData.specialCharTitle);
+      page.getHistoryItemByIndex(0).should('contain.text', data.specialCharTitle);
     });
   });
 
-  it('C698111 - Verify that the character limit (50) is enforced when editing the title.', () => {
-    cy.fixture('chatHistory').then((chatHistoryData: any) => {
-      const overLimitTitle = `${chatHistoryData.maxLengthTitle}EXTRA`;
-      chatHistoryPage.openHistoryMenuByIndex(0);
-      chatHistoryPage.clickEditAction();
-      chatHistoryPage.updateTitle(overLimitTitle);
+  it('C698111 - Verify that the 50-character title limit is enforced.', () => {
+    cy.fixture('chatHistory').then((data: any) => {
+      const overLimitTitle = `${data.maxLengthTitle}EXTRA`;
 
-      cy.wait('@updateChatTitle').then((interception: any) => {
+      page.openHistoryMenuByIndex(0);
+      page.clickEditAction();
+      page.typeEditTitle(overLimitTitle);
+      page.clickEditUpdate();
+
+      cy.wait(`@${ALIASES.updateTitle}`).then((interception: any) => {
         expect(interception.response?.statusCode).to.eq(200);
-        const title = String(interception.response?.body?.data?.title || '');
-        expect(title.length).to.be.at.most(50);
+        expect(String(interception.response?.body?.data?.title || '').length).to.be.at.most(50);
       });
 
-      chatHistoryPage.getHistoryItemByIndex(0).invoke('text').then((text: string) => {
+      page.getHistoryItemByIndex(0).invoke('text').then((text: string) => {
         expect(text.trim().length).to.be.at.most(50);
       });
     });
   });
 
-  it('C698125 - Verify that empty titles are handled gracefully.', () => {
-    chatHistoryPage.getHistoryItemTextByIndex(0).then((originalTitle: string) => {
-      const normalizedOriginalTitle = originalTitle.trim();
-      chatHistoryPage.openHistoryMenuByIndex(0);
-      chatHistoryPage.clickEditAction();
-      // Type whitespace-only — frontend may reject without calling API
-      chatHistoryPage.updateTitle(' ');
-      // Do NOT wait for @updateChatTitle — frontend may have client-side validation
-      // Regardless of whether the API was called, the displayed title must remain non-empty
-      chatHistoryPage.getHistoryItemByIndex(0).invoke('text').should((updatedText: string) => {
-        expect(updatedText.trim().length, 'title must not be empty after whitespace-only save').to.be.greaterThan(0);
-        expect(normalizedOriginalTitle.length, 'original title must be non-empty').to.be.greaterThan(0);
+  it('C698125 - Verify that whitespace-only titles are rejected and the original title is retained.', () => {
+    page.getHistoryItemTextByIndex(0).then((originalTitle: string) => {
+      const normalizedOriginal = originalTitle.trim();
+
+      page.openHistoryMenuByIndex(0);
+      page.clickEditAction();
+      // Whitespace-only input — frontend may reject client-side without calling the API.
+      page.typeEditTitle(' ');
+      page.clickEditUpdate();
+
+      // Regardless of whether the API was called the rendered title must remain non-empty.
+      page.getHistoryItemByIndex(0).invoke('text').should((updatedText: string) => {
+        expect(updatedText.trim().length, 'title must not become empty').to.be.greaterThan(0);
+        expect(normalizedOriginal.length, 'original title was non-empty').to.be.greaterThan(0);
       });
     });
   });
 
-  it('C700502 - Verify that the Edit title flow allows confirm or cancel action.', () => {
-    cy.fixture('chatHistory').then((chatHistoryData: any) => {
-      chatHistoryPage.getHistoryItemTextByIndex(0).then((originalTitle: string) => {
-        const normalizedOriginalTitle = originalTitle.trim();
-        chatHistoryPage.openHistoryMenuByIndex(0);
-        chatHistoryPage.clickEditAction();
-        chatHistoryPage.updateTitle(chatHistoryData.updatedTitle);
-        cy.wait('@updateChatTitle').its('response.statusCode').should('eq', 200);
+  it('C700502 - Verify that the Edit flow supports both confirm and cancel actions.', () => {
+    cy.fixture('chatHistory').then((data: any) => {
+      page.getHistoryItemTextByIndex(0).then((originalTitle: string) => {
+        const normalizedOriginal = originalTitle.trim();
 
-        chatHistoryPage.openHistoryMenuByIndex(0);
-        chatHistoryPage.clickEditAction();
-        chatHistoryPage.typeEditTitle(`${chatHistoryData.updatedTitle} - cancel candidate`);
-        chatHistoryPage.cancelEditTitle();
+        // Confirm — title should update.
+        page.openHistoryMenuByIndex(0);
+        page.clickEditAction();
+        page.typeEditTitle(data.updatedTitle);
+        page.clickEditUpdate();
+        cy.wait(`@${ALIASES.updateTitle}`).its('response.statusCode').should('eq', 200);
 
-        chatHistoryPage.getHistoryItemByIndex(0).should('contain.text', chatHistoryData.updatedTitle);
-        expect(normalizedOriginalTitle.length).to.be.greaterThan(0);
+        // Cancel — previously confirmed title should remain.
+        page.openHistoryMenuByIndex(0);
+        page.clickEditAction();
+        page.typeEditTitle(`${data.updatedTitle} - cancel candidate`);
+        page.cancelEditTitle();
+
+        page.getHistoryItemByIndex(0).should('contain.text', data.updatedTitle);
+        expect(normalizedOriginal.length).to.be.greaterThan(0);
       });
     });
   });
 
-  it('C698112 - Verify that the Cancel button in Edit discards changes when editing a title.', () => {
-    cy.fixture('chatHistory').then((chatHistoryData: any) => {
-      chatHistoryPage.getHistoryItemTextByIndex(0).then((originalTitle: string) => {
-        const normalizedOriginalTitle = originalTitle.trim();
-        chatHistoryPage.openHistoryMenuByIndex(0);
-        chatHistoryPage.clickEditAction();
-        chatHistoryPage.typeEditTitle(chatHistoryData.updatedTitle);
-        chatHistoryPage.cancelEditTitle();
+  it('C698112 - Verify that cancelling Edit discards changes and restores the original title.', () => {
+    cy.fixture('chatHistory').then((data: any) => {
+      page.getHistoryItemTextByIndex(0).then((originalTitle: string) => {
+        const normalizedOriginal = originalTitle.trim();
 
-        chatHistoryPage.getHistoryItemByIndex(0).should('contain.text', normalizedOriginalTitle);
+        page.openHistoryMenuByIndex(0);
+        page.clickEditAction();
+        page.typeEditTitle(data.updatedTitle);
+        page.cancelEditTitle();
+
+        page.getHistoryItemByIndex(0).should('contain.text', normalizedOriginal);
       });
     });
   });
 
-  it('C698123 - Verify rapid selection and edits are handled gracefully with no duplicate entries.', () => {
-    return ensureMinHistoryItems(2).then(() => {
-      cy.fixture('chatHistory').then((chatHistoryData: any) => {
-        chatHistoryPage.getHistoryItems().its('length').then((initialCount: number) => {
-          const uniqueTitle = `${chatHistoryData.updatedTitle} ${Date.now()}`;
-          chatHistoryPage.selectHistoryItemByIndex(0);
-          chatHistoryPage.selectHistoryItemByIndex(1);
-          chatHistoryPage.selectHistoryItemByIndex(0);
+  it('C698123 - Verify rapid item selection followed by an edit produces no duplicates.', () => {
+    requireMinItems(2).then(() => {
+      cy.fixture('chatHistory').then((data: any) => {
+        page.getHistoryItems().its('length').then((initialCount: number) => {
+          const uniqueTitle = `${data.updatedTitle} ${Date.now()}`;
 
-          chatHistoryPage.openHistoryMenuByIndex(0);
-          chatHistoryPage.clickEditAction();
-          chatHistoryPage.updateTitle(uniqueTitle);
-          cy.wait('@updateChatTitle').its('response.statusCode').should('eq', 200);
+          // Rapid-click multiple items before editing — must not corrupt state.
+          page.selectHistoryItemByIndex(0);
+          page.selectHistoryItemByIndex(1);
+          page.selectHistoryItemByIndex(0);
 
-          chatHistoryPage.getHistoryItems().its('length').should('eq', initialCount);
-          chatHistoryPage.getHistoryItemByIndex(0).should('contain.text', uniqueTitle);
+          page.openHistoryMenuByIndex(0);
+          page.clickEditAction();
+          page.typeEditTitle(uniqueTitle);
+          page.clickEditUpdate();
+          cy.wait(`@${ALIASES.updateTitle}`).its('response.statusCode').should('eq', 200);
+
+          page.getHistoryItems().its('length').should('eq', initialCount);
+          page.getHistoryItemByIndex(0).should('contain.text', uniqueTitle);
         });
       });
     });
   });
 
-   it('C698127 - Verify editing a chat while another is selected does not overwrite other chats.', () => {
-    return ensureMinHistoryItems(2).then(() => {
-      cy.fixture('chatHistory').then((chatHistoryData: any) => {
-        chatHistoryPage.getHistoryItemTextByIndex(1).then((secondTitle: string) => {
+  it('C698127 - Verify editing one chat does not overwrite another selected chat.', () => {
+    requireMinItems(2).then(() => {
+      cy.fixture('chatHistory').then((data: any) => {
+        page.getHistoryItemTextByIndex(1).then((secondTitle: string) => {
           const preservedTitle = secondTitle.trim();
-          const uniqueTitle = `${chatHistoryData.updatedTitle} ${Date.now()}`;
-          chatHistoryPage.selectHistoryItemByIndex(1);
-          chatHistoryPage.openHistoryPanel();
+          const uniqueTitle = `${data.updatedTitle} ${Date.now()}`;
 
-          chatHistoryPage.openHistoryMenuByIndex(0);
-          chatHistoryPage.clickEditAction();
-          chatHistoryPage.updateTitle(uniqueTitle);
-          cy.wait('@updateChatTitle').its('response.statusCode').should('eq', 200);
+          page.selectHistoryItemByIndex(1);
+          page.openHistoryPanel();
 
-          chatHistoryPage.getPanel().should('contain.text', uniqueTitle);
-          chatHistoryPage.getPanel().should('contain.text', preservedTitle);
+          page.openHistoryMenuByIndex(0);
+          page.clickEditAction();
+          page.typeEditTitle(uniqueTitle);
+          page.clickEditUpdate();
+          cy.wait(`@${ALIASES.updateTitle}`).its('response.statusCode').should('eq', 200);
+
+          page.getPanel().should('contain.text', uniqueTitle);
+          page.getPanel().should('contain.text', preservedTitle);
         });
       });
     });
   });
 
-  it('C698141 - Verify editing active chat title updates without reloading conversation.', () => {
-    cy.fixture('chatHistory').then((chatHistoryData: any) => {
-      const uniqueTitle = `${chatHistoryData.updatedTitle} ${Date.now()}`;
-      chatHistoryPage.selectHistoryItemByIndex(0);
-      cy.location('pathname').then((pathBefore: string) => {
-        chatHistoryPage.openHistoryPanel();
-        chatHistoryPage.openHistoryMenuByIndex(0);
-        chatHistoryPage.clickEditAction();
-        chatHistoryPage.updateTitle(uniqueTitle);
+  it('C698141 - Verify editing the active chat title does not reload the conversation.', () => {
+    cy.fixture('chatHistory').then((data: any) => {
+      const uniqueTitle = `${data.updatedTitle} ${Date.now()}`;
 
-        cy.wait('@updateChatTitle').its('response.statusCode').should('eq', 200);
+      page.selectHistoryItemByIndex(0);
+      cy.location('pathname').then((pathBefore: string) => {
+        page.openHistoryPanel();
+        page.openHistoryMenuByIndex(0);
+        page.clickEditAction();
+        page.typeEditTitle(uniqueTitle);
+        page.clickEditUpdate();
+
+        cy.wait(`@${ALIASES.updateTitle}`).its('response.statusCode').should('eq', 200);
         cy.location('pathname').should('eq', pathBefore);
-        chatHistoryPage.getHistoryItemByIndex(0).should('contain.text', uniqueTitle);
+        page.getHistoryItemByIndex(0).should('contain.text', uniqueTitle);
       });
     });
   });
 
-  it('C782432 - Verify that edited chat sorts to top of the list without refreshing the page.', () => {
-    return ensureMinHistoryItems(2).then(() => {
-      cy.fixture('chatHistory').then((chatHistoryData: any) => {
-        const uniqueTitle = `${chatHistoryData.updatedTitle} MoveTop ${Date.now()}`;
+  it('C782432 - Verify that an edited chat sorts to the top of the list without page reload.', () => {
+    requireMinItems(2).then(() => {
+      cy.fixture('chatHistory').then((data: any) => {
+        const uniqueTitle = `${data.updatedTitle} MoveTop ${Date.now()}`;
 
-        chatHistoryPage.getHistoryItems().its('length').then((initialCount: number) => {
+        page.getHistoryItems().its('length').then((initialCount: number) => {
           cy.location('pathname').then((pathBefore: string) => {
-            // Edit a middle/end non-top item to validate it bubbles to the top in-place.
+            // Target a non-first item to prove it moves to the top after edit.
             const targetIndex = initialCount > 2 ? Math.floor(initialCount / 2) : initialCount - 1;
-            expect(targetIndex, 'target index should never be the first row').to.be.greaterThan(0);
+            expect(targetIndex, 'target index must not be the first row').to.be.greaterThan(0);
 
-            chatHistoryPage.openHistoryMenuByIndex(targetIndex);
-            chatHistoryPage.clickEditAction();
-            chatHistoryPage.updateTitle(uniqueTitle);
+            page.openHistoryMenuByIndex(targetIndex);
+            page.clickEditAction();
+            page.typeEditTitle(uniqueTitle);
+            page.clickEditUpdate();
 
-            cy.wait('@updateChatTitle').then((interception: any) => {
+            cy.wait(`@${ALIASES.updateTitle}`).then((interception: any) => {
               expect(interception.response?.statusCode).to.eq(200);
               expect(interception.response?.body?.data?.title).to.eq(uniqueTitle);
             });
 
             cy.location('pathname').should('eq', pathBefore);
-            chatHistoryPage.getHistoryItems().its('length').should('eq', initialCount);
+            page.getHistoryItems().its('length').should('eq', initialCount);
 
-            chatHistoryPage.getAllHistoryItemTexts().then((titles: string[]) => {
-              expect(titles.length, 'history list should not be empty').to.be.greaterThan(0);
-              expect(titles[0], 'edited chat should be sorted to top').to.eq(uniqueTitle);
-              const occurrences = titles.filter((title: string) => title === uniqueTitle).length;
-              expect(occurrences, 'edited title should appear exactly once').to.eq(1);
+            page.getAllHistoryItemTexts().then((titles: string[]) => {
+              expect(titles.length).to.be.greaterThan(0);
+              expect(titles[0], 'edited chat should bubble to the top').to.eq(uniqueTitle);
+              expect(titles.filter((t: string) => t === uniqueTitle).length, 'title appears exactly once').to.eq(1);
             });
           });
         });
@@ -225,27 +235,24 @@ describe('Action (Edit)', () => {
     });
   });
 
-  it('C700503 - Verify that Edit buttons are accessible via keyboard.', () => {
-    chatHistoryPage.openHistoryPanel();
-
+  it('C700503 - Verify that the Edit action is accessible via keyboard.', () => {
     const keyboardTitle = `Keyboard Edit ${Date.now()}`;
 
-    // Row actions are hover-gated in this UI.
-    chatHistoryPage.selectHistoryItemByIndex(0);
-    chatHistoryPage.hoverHistoryItemByIndex(0);
-    chatHistoryPage.openHistoryMenuByIndex(0);
+    page.selectHistoryItemByIndex(0);
+    page.hoverHistoryItemByIndex(0);
+    page.openHistoryMenuByIndex(0);
 
-    // Open Edit and save using keyboard Enter from the input field.
-    chatHistoryPage.getEditAction().should('exist').click({ force: true });
-    chatHistoryPage.getEditContainer().should('be.visible');
-    chatHistoryPage.typeEditTitle(`${keyboardTitle}{enter}`);
+    // Save via Enter key pressed directly inside the edit input.
+    page.getEditAction().should('exist').click({ force: true });
+    page.getEditContainer().should('be.visible');
+    page.typeEditTitle(`${keyboardTitle}{enter}`);
 
-    cy.wait('@updateChatTitle').then((interception: any) => {
+    cy.wait(`@${ALIASES.updateTitle}`).then((interception: any) => {
       expect(interception.response?.statusCode).to.eq(200);
       expect(interception.response?.body?.data?.title).to.eq(keyboardTitle);
     });
 
-    chatHistoryPage.getHistoryItemByIndex(0).should('contain.text', keyboardTitle);
+    page.getHistoryItemByIndex(0).should('contain.text', keyboardTitle);
   });
-  
 });
+
