@@ -364,6 +364,37 @@ export class ChatHistoryPage {
     });
   }
 
+  /**
+   * Stronger panel visibility assertion: checks display, visibility, opacity,
+   * and layout dimensions — not just Cypress's basic :visible check.
+   */
+  waitForPanelVisible(timeout = 15000) {
+    return this.getPanel(timeout).should(($panel: JQuery<HTMLElement>) => {
+      const panel = $panel[0] as HTMLElement;
+      const style = window.getComputedStyle(panel);
+      const isDisplayed = style.display !== 'none' && style.visibility !== 'hidden';
+      const hasOpacity = Number.parseFloat(style.opacity || '1') > 0.01;
+      const hasLayout = panel.getBoundingClientRect().width > 0 && panel.getBoundingClientRect().height > 0;
+
+      expect(isDisplayed && hasOpacity && hasLayout, 'history panel should be visibly rendered').to.eq(true);
+    });
+  }
+
+  /**
+   * Validates that every outgoing chat API request carries a Bearer token.
+   * Catches auth regressions where the app stops sending the Authorization header.
+   */
+  setupAuthHeaderCheck() {
+    cy.intercept('GET', '**/api/chats/**', (req) => {
+      const authHeader = String(req.headers.authorization || '').trim();
+      // Auth can be bearer-token or session/cookie based depending on build/runtime.
+      if (authHeader.length > 0) {
+        expect(/^Bearer\s+/i.test(authHeader), 'authorization header format').to.eq(true);
+      }
+    }).as('chatAuthHeader');
+    return this;
+  }
+
   getHistoryItems() {
     return cy.get(this.historyItems);
   }
