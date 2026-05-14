@@ -1,6 +1,7 @@
 /// <reference types="cypress" />
 
 import { InitialPromptPage } from '../../pages/InitialPromptPage';
+import { MESSAGE_SELECTOR, CHAT_TITLE_SELECTOR } from '../../pages/CommonSelectors';
 
 describe('Free-form Text Input Field Behaviour', () => {
   const page = new InitialPromptPage();
@@ -13,28 +14,11 @@ describe('Free-form Text Input Field Behaviour', () => {
 
   const veryLongPastedPrompt = `${longPrompt}\n${longPrompt}\n${longPrompt}\n${longPrompt}`;
 
-  const messageSelectors = [
-    '[data-testid*="message"]',
-    '[data-testid*="chat-message"]',
-    '[class*="message"]',
-    '[class*="chat-bubble"]',
-    '[role="article"]',
-  ].join(', ');
-
-  const chatTitleSelectors = [
-    '[data-testid="chat-title"]',
-    '[data-testid*="title"]',
-    'header h1',
-    'header h2',
-    'h1',
-    'h2',
-  ].join(', ');
-
   const normalizeText = (value: string) => value.replace(/\s+/g, ' ').trim();
 
   const readTitleText = () => {
     return cy.get('body').then(($body: JQuery<HTMLElement>) => {
-      const titleElements = $body.find(chatTitleSelectors).filter(':visible');
+      const titleElements = $body.find(CHAT_TITLE_SELECTOR).filter(':visible');
       const exactTitleElement = Array.from(titleElements).find((element: Element) => {
         const text = normalizeText((element.textContent ?? '').trim());
         return text.length > 0 && !/new\s*chat/i.test(text) && /chat|untitled|db agent/i.test(text);
@@ -57,18 +41,32 @@ describe('Free-form Text Input Field Behaviour', () => {
   let chatRequestCount = 0;
   const stubChatRequest = () => {
     chatRequestCount = 0;
-    cy.intercept('POST', '**/chat**', (req) => {
+    cy.intercept('POST', '**/api/chats/*/send-query', (req) => {
       chatRequestCount++;
-      req.reply({ statusCode: 200, body: { message: 'Mocked response' } });
+      req.continue();
     }).as('chatRequest');
+    // Also intercept chat creation so first-prompt tests still pass
+    cy.intercept('POST', /\/api\/chats(?:\?.*)?$/).as('chatCreate');
+  };
+
+  const submitWithEnter = (promptText: string) => {
+    page.messageInput().should('be.visible').and('not.be.disabled');
+    page.appendPrompt(promptText);
+    page.messageInput().should('be.visible').type('{enter}');
+  };
+
+  const waitForChatRequest = () => cy.wait('@chatRequest', { timeout: 30000 });
+
+  const assertInputCleared = () => {
+    page.inputValue().then((value) => {
+      expect(`${value ?? ''}`.trim()).to.eq('');
+    });
   };
 
   beforeEach(() => {
-    page.loginOnceForSuite();
-  });
-
-  beforeEach(() => {
-    page.openChatPage().waitForWelcomeScreen();
+    cy.loginBySession();
+    page.openChatPage();
+    cy.contains(/Welcome to DB Agent/i, { timeout: 30000 }).should('be.visible');
     page.clearPrompt();
   });
 
@@ -247,13 +245,9 @@ describe('Free-form Text Input Field Behaviour', () => {
   it('C679706 - Verify "Enter" key triggers the query submission after user has typed the prompt.', () => {
     stubChatRequest();
 
-    page.appendPrompt(shortPrompt);
-    page.messageInput().should('be.visible').type('{enter}');
-
-    cy.wait('@chatRequest');
-    page.inputValue().then((value) => {
-      expect(`${value ?? ''}`.trim()).to.eq('');
-    });
+    submitWithEnter(shortPrompt);
+    waitForChatRequest();
+    assertInputCleared();
   });
 
   it('C679710 - Verify Empty/ Whitespaced message can not be submitted i.e the Send button remains inactive.', () => {
@@ -277,13 +271,9 @@ describe('Free-form Text Input Field Behaviour', () => {
   it('C700487 - Verify that input field is cleared immediately upon clicking Send / Enter.', () => {
     stubChatRequest();
 
-    page.appendPrompt(shortPrompt);
-    page.messageInput().should('be.visible').type('{enter}');
-
-    cy.wait('@chatRequest');
-    page.inputValue().then((value) => {
-      expect(`${value ?? ''}`.trim()).to.eq('');
-    });
+    submitWithEnter(shortPrompt);
+    waitForChatRequest();
+    assertInputCleared();
   });
 
   it('C700467 - Verify that No backend request is triggered without user input until Send/Enter is pressed.', () => {
@@ -296,25 +286,19 @@ describe('Free-form Text Input Field Behaviour', () => {
   it('C700471 - Verify input field is re-enabled after the response.', () => {
     stubChatRequest();
 
-    page.appendPrompt(shortPrompt);
-    page.messageInput().should('be.visible').type('{enter}');
-
-    cy.wait('@chatRequest');
-    page.inputShouldBeEnabled();
+    submitWithEnter(shortPrompt);
+    waitForChatRequest();
+    page.messageInput().should('not.be.disabled');
   });
 
   it('C700473 - Verify user can submit a follow-up prompt after receiving a response.', () => {
     stubChatRequest();
 
-    page.appendPrompt(shortPrompt);
-    page.messageInput().should('be.visible').type('{enter}');
+    submitWithEnter(shortPrompt);
+    waitForChatRequest();
 
-    cy.wait('@chatRequest');
-
-    page.appendPrompt('Follow up question');
-    page.messageInput().should('be.visible').type('{enter}');
-
-    cy.wait('@chatRequest');
+    submitWithEnter('Follow up question');
+    waitForChatRequest();
     cy.then(() => expect(chatRequestCount, 'two requests for two prompts').to.eq(2));
   });
 
@@ -324,13 +308,11 @@ describe('Free-form Text Input Field Behaviour', () => {
 
     stubChatRequest();
 
-    page.appendPrompt(firstPrompt);
-    page.messageInput().type('{enter}');
-    cy.wait('@chatRequest');
+    submitWithEnter(firstPrompt);
+    waitForChatRequest();
 
-    page.appendPrompt(secondPrompt);
-    page.messageInput().type('{enter}');
-    cy.wait('@chatRequest');
+    submitWithEnter(secondPrompt);
+    waitForChatRequest();
 
     cy.contains(firstPrompt, { timeout: 20000 }).should('be.visible');
     cy.contains(secondPrompt, { timeout: 20000 }).should('be.visible');
@@ -342,9 +324,8 @@ describe('Free-form Text Input Field Behaviour', () => {
     const prompts = ['First follow up', 'Second follow up', 'Third follow up'];
 
     prompts.forEach((promptText) => {
-      page.appendPrompt(promptText);
-      page.messageInput().type('{enter}');
-      cy.wait('@chatRequest');
+      submitWithEnter(promptText);
+      waitForChatRequest();
     });
 
     cy.get('body').then(($body: JQuery<HTMLElement>) => {
@@ -363,10 +344,8 @@ describe('Free-form Text Input Field Behaviour', () => {
     stubChatRequest();
 
     const promptText = 'No duplicates expected';
-    page.appendPrompt(promptText);
-    page.messageInput().type('{enter}');
-
-    cy.wait('@chatRequest');
+    submitWithEnter(promptText);
+    waitForChatRequest();
 
     cy.get('body').then(($body: JQuery<HTMLElement>) => {
       const allText = $body.text();
@@ -380,12 +359,11 @@ describe('Free-form Text Input Field Behaviour', () => {
 
     const prompts = ['Formatting check one', 'Formatting check two'];
     prompts.forEach((promptText) => {
-      page.appendPrompt(promptText);
-      page.messageInput().type('{enter}');
-      cy.wait('@chatRequest');
+      submitWithEnter(promptText);
+      waitForChatRequest();
     });
 
-    cy.get(messageSelectors)
+    cy.get(MESSAGE_SELECTOR)
       .filter(':visible')
       .then(($messages: JQuery<HTMLElement>) => {
         const items = Array.from($messages).filter((item: HTMLElement) => normalizeText(item.textContent ?? '').length > 0);
@@ -496,7 +474,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     ].join(', ');
 
     cy.visit(page.chatPath);
-    page.waitForWelcomeScreen();
+    cy.contains(/Welcome to DB Agent/i, { timeout: 30000 }).should('be.visible');
     page.clearPrompt();
     page.appendPrompt(draftText);
     page.inputValue().should('contain', draftText);
@@ -512,7 +490,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     });
 
     cy.visit(page.chatPath);
-    page.waitForWelcomeScreen();
+    cy.contains(/Welcome to DB Agent/i, { timeout: 30000 }).should('be.visible');
     page.inputValue().should('contain', draftText);
 
     cy.location('href').then((chatUrl) => {
@@ -524,7 +502,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     });
 
     cy.visit(page.chatPath);
-    page.waitForWelcomeScreen();
+    cy.contains(/Welcome to DB Agent/i, { timeout: 30000 }).should('be.visible');
     page.inputValue().should('contain', draftText);
   });
 });
