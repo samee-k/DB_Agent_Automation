@@ -1,39 +1,17 @@
 /// <reference types="cypress" />
 
+import { CHAT_INPUT_SELECTOR, SEND_BUTTON_SELECTORS, USER_MESSAGE_SELECTOR } from './CommonSelectors';
+
 export class UserPromptActionsPage {
   readonly chatPath = Cypress.env('chatPath') ?? '/dbagent/11/chat';
   readonly sendQueryRoute = '**/api/chats/*/send-query';
   readonly createChatRoute = /\/api\/chats(?:\?.*)?$/;
 
   // Input
-  private readonly promptInputSelector = [
-    '#dbagent-textarea',
-    'textarea.dbagent-textarea',
-    'textarea[id="dbagent-textarea"]',
-    '[data-testid="message-input"]',
-    '[data-testid="chat-input"]',
-    '[data-cy="chat-input"]',
-    'textarea.chat-input',
-    'textarea[placeholder*="Ask here"]',
-    '[role="textbox"][placeholder*="Ask here"]',
-    '[role="textbox"]',
-    '[contenteditable="true"]',
-    '.ProseMirror',
-    '.ql-editor',
-  ].join(', ');
+  private readonly chatInputSelector = CHAT_INPUT_SELECTOR;
 
   // User message bubble — searched by text content in hoverUserMessageContaining()
-  private readonly userMessageContainerSelector = [
-    '[data-testid*="user-message"]',
-    '[data-testid*="user-prompt"]',
-    '[data-cy="user-message"]',
-    '.user-message',
-    '.user-prompt',
-    '.chat-message.user',
-    '.message.user',
-    '.question',
-    '.user-query',
-  ].join(', ');
+  private readonly userMessageContainerSelector = USER_MESSAGE_SELECTOR;
 
   // Action icons that appear on hover of the user message.
   // aria-label values confirmed from actual DOM: "Copy Text" and "Edit Prompt".
@@ -56,10 +34,8 @@ export class UserPromptActionsPage {
     '.edit-btn',
   ].join(', ');
 
-  // Edit mode elements.
-  // When the Edit icon is clicked, the bottom input area enters edit mode
-  // and shows an "Edit your prompt" label above the existing textarea.
   private readonly editModeLabel = /Edit your prompt/i;
+
   private readonly editTextareaSelector = [
     '[data-testid="edit-prompt-input"]',
     '[data-cy="edit-prompt-input"]',
@@ -74,19 +50,7 @@ export class UserPromptActionsPage {
   private readonly editSaveSelector = [
     '[data-testid="edit-prompt-save"]',
     '[data-cy="edit-prompt-save"]',
-    'button[aria-label="Send"][type="button"]',
-    'button[aria-label*="Send"]',
-    'button[type="submit"]',
-  ].join(', ');
-
-  // Cancel = any cancel/discard button that appears in edit mode.
-  private readonly editCancelSelector = [
-    '[data-testid="edit-prompt-cancel"]',
-    '[data-cy="edit-prompt-cancel"]',
-    'button[aria-label*="cancel" i]',
-    '.cancel-edit-btn',
-    'button:contains("Cancel")',
-    'button:contains("Discard")',
+    ...SEND_BUTTON_SELECTORS,
   ].join(', ');
 
   readonly charCountSelector = '.char-count';
@@ -114,7 +78,7 @@ export class UserPromptActionsPage {
   // ── Input helpers ─────────────────────────────────────────────────────────
 
   messageInput(): Cypress.Chainable<JQuery<HTMLElement>> {
-    return cy.get(this.promptInputSelector, { timeout: 20000 }).filter(':visible').first();
+    return cy.get(this.chatInputSelector, { timeout: 20000 }).filter(':visible').first();
   }
 
   typePrompt(text: string) {
@@ -134,9 +98,6 @@ export class UserPromptActionsPage {
   }
 
   sendPromptAndWait(text: string) {
-    // Use this only in tests that explicitly need backend response completion.
-    // Timeouts reflect realistic SLA expectations — if the backend is slower than these,
-    // the test failing is the correct outcome.
     cy.intercept({ method: 'POST', url: this.createChatRoute, times: 1 }).as('createChat');
     cy.intercept({ method: 'POST', url: this.sendQueryRoute, times: 1 }).as('sendQuery');
 
@@ -156,8 +117,6 @@ export class UserPromptActionsPage {
   }
 
   sendPromptAndEnsureUserMessage(text: string) {
-    // Flake-safe setup for UI-action tests: ensure chat is created and user prompt is rendered,
-    // without waiting for the assistant response to complete.
     cy.intercept({ method: 'POST', url: this.createChatRoute, times: 1 }).as('createChat');
 
     this.typePrompt(text).submitPrompt();
@@ -196,10 +155,6 @@ export class UserPromptActionsPage {
     });
   }
 
-  /**
-   * Primary hover method — finds the message bubble by its text content,
-   * then hovers it to reveal the copy/edit action icons.
-   */
   hoverUserMessageContaining(text: string) {
     cy.get('body').then(($body: JQuery<HTMLElement>) => {
       $body.find('[data-cy-active-user-message="true"]').removeAttr('data-cy-active-user-message');
@@ -209,17 +164,12 @@ export class UserPromptActionsPage {
       .invoke('attr', 'data-cy-active-user-message', 'true')
       .as(this.activeUserMessageAlias)
       .realHover();
-    // Small wait for CSS :hover transition to apply and icons to render.
     cy.wait(400);
     return this;
   }
 
   // ── Clipboard stub ─────────────────────────────────────────────────────────
 
-  /**
-   * Stubs navigator.clipboard.writeText before the copy action so the test
-   * can assert the exact text written without requiring browser clipboard permissions.
-   */
   stubClipboard() {
     cy.window().then((win: Window) => {
       if (win.navigator.clipboard && typeof win.navigator.clipboard.writeText === 'function') {
@@ -260,7 +210,6 @@ export class UserPromptActionsPage {
   }
 
   assertCopyConfirmation() {
-    // App may show a tooltip, toast, or aria-label change on successful copy.
     cy.get('body').then(($body: JQuery<HTMLElement>) => {
       const hasCopiedText = /copied/i.test($body.text());
       const hasToast = $body.find('[class*="toast"], [class*="snack"], [role="status"], [role="alert"]').filter(':visible').length > 0;
@@ -294,8 +243,6 @@ export class UserPromptActionsPage {
   }
 
   saveEdit() {
-    // Send button (↑) submits the edited prompt.
-    // Fall back to pressing Enter on the edit textarea if no distinct save button found.
     cy.get('body').then(($body: JQuery<HTMLElement>) => {
       const saveBtn = $body.find(this.editSaveSelector).filter(':visible');
       if (saveBtn.length > 0) {
@@ -308,7 +255,6 @@ export class UserPromptActionsPage {
   }
 
   cancelEdit() {
-    // Press Escape as the universal cancel for edit mode.
     cy.get('body').type('{esc}');
     return this;
   }
@@ -334,18 +280,11 @@ export class UserPromptActionsPage {
         .find('*')
         .filter((_, el: Element) => /Edit your prompt/i.test((el.textContent || '').trim()))
         .filter(':visible').length > 0;
-
-      // If the label is not visible, edit mode is considered closed in current app behavior.
       expect(editLabelVisible, 'edit mode label should not be visible').to.eq(false);
     });
     return this;
   }
 
-  /**
-   * Asserts the .action-btns container is visually hidden using jQuery's
-   * css() which reliably reads the computed opacity including from
-   * descendant selectors like .user-hover .action-btns { opacity: 0 }.
-   */
   assertActionIconsHidden(context: string) {
     cy.get('body').then(($body: JQuery<HTMLElement>) => {
       const copyVisible = $body.find(this.copyIconSelector).filter(':visible').length > 0;
