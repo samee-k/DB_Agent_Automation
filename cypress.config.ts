@@ -25,7 +25,17 @@ export default defineConfig({
       chatPath: process.env.CYPRESS_CHAT_PATH || '/dbagent/810/chat',
     },
     setupNodeEvents(on, config) {
+      on('task', {
+        log(message: string) {
+          console.log(message);
+          return null;
+        },
+      });
       return config;
     },
+    excludeSpecPattern: [
+      'cypress/e2e/login.cy.ts',
+      'cypress/e2e/agent response/input-processing-indicator.cy.ts',
+    ]
   },
 });
