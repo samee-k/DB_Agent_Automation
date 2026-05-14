@@ -1,191 +1,206 @@
 /// <reference types="cypress" />
 
 import { ChatHistoryPage } from '../../pages/ChatHistoryPage';
+import {
+  ALIASES,
+  interceptDeleteChat,
+  interceptSearchChats,
+  interceptUpdateTitle,
+  seedAndVisit,
+} from './chat-history.helpers';
 
-describe('Search on Chat History', () => {
-  const chatHistoryPage = new ChatHistoryPage();
+describe('Chat History — Search', () => {
+  const page = new ChatHistoryPage();
 
-  const getSearchableTerm = (): Cypress.Chainable<string> => {
-    return chatHistoryPage.getHistoryItemTextByIndex(0).then((title: string) => {
-      const normalized = title.trim();
-      const token = normalized.split(/\s+/)[0] || normalized;
+  // Returns the first word (2–8 chars) of the top history item's title — a safe search term.
+  const getSearchableToken = (): Cypress.Chainable<string> =>
+    page.getHistoryItemTextByIndex(0).then((title: string) => {
+      const token = title.trim().split(/\s+/)[0] || title.trim();
       return token.slice(0, Math.max(2, Math.min(token.length, 8)));
     });
-  };
 
+  // TODO(QA-BACKEND): Replace API seeding with deterministic cleanup endpoint when available.
   beforeEach(() => {
-    // TODO(QA-BACKEND): Enable deterministic cleanup when backend endpoint is available.
-    // cy.request('POST', '/api/test/cleanup');
-
-    cy.loginByApiSession();
-
-    chatHistoryPage.interceptGetChatsByProject();
-    chatHistoryPage.interceptSearchByProject();
-    chatHistoryPage.interceptUpdateTitle();
-    chatHistoryPage.interceptDeleteChat();
-    chatHistoryPage.visitChatPage();
-    cy.wait('@getChatsByProject').its('response.statusCode').should('eq', 200);
-
-    cy.seedChatsByProjectViaApiIfEmpty(5, 20);
-    chatHistoryPage.interceptGetChatsByProject();
-    chatHistoryPage.visitChatPage();
-    cy.wait('@getChatsByProject').its('response.statusCode').should('eq', 200);
-
-    chatHistoryPage.openHistoryPanel();
-    chatHistoryPage.waitForHistoryItemCountAtLeast(1);
+    cy.loginBySession();
+    interceptSearchChats();
+    interceptUpdateTitle();
+    interceptDeleteChat();
+    seedAndVisit(page);
   });
 
-  it('C698131 - Verify search box is present on history panel and visible.', () => {
-    chatHistoryPage.getSearchInput().should('be.visible');
-    chatHistoryPage.getPanel().should('be.visible');
+  // ---------------------------------------------------------------------------
+  // Search box visibility
+  // ---------------------------------------------------------------------------
+
+  it('C698131 - Verify the search box is present and visible in the history panel.', () => {
+    page.getSearchInput().should('be.visible');
+    page.getPanel().should('be.visible');
   });
 
-  it('C698130 - Verify search works with valid inputs.', () => {
-    getSearchableTerm().then((searchTerm) => {
-      chatHistoryPage.typeInSearch(searchTerm);
-      cy.wait('@searchChatsByProject').its('response.statusCode').should('eq', 200);
+  // ---------------------------------------------------------------------------
+  // Search result correctness
+  // ---------------------------------------------------------------------------
 
-      chatHistoryPage.getHistoryItemCount().should('be.greaterThan', 0);
-      chatHistoryPage.getPanel().should('be.visible');
+  it('C698130 - Verify search returns matching results for valid input.', () => {
+    getSearchableToken().then((searchTerm) => {
+      page.typeInSearch(searchTerm);
+      cy.wait(`@${ALIASES.searchChats}`).its('response.statusCode').should('eq', 200);
+
+      page.getHistoryItemCount().should('be.greaterThan', 0);
+      page.getPanel().should('be.visible');
     });
   });
 
-  it('C698139 - Verify search results update dynamically as user types.', () => {
-    getSearchableTerm().then((searchTerm) => {
-      const partialTerm = searchTerm.slice(0, 2);
-      chatHistoryPage.typeInSearch(partialTerm);
-      cy.wait('@searchChatsByProject').its('response.statusCode').should('eq', 200);
+  it('C698139 - Verify search results narrow as the user types more characters.', () => {
+    getSearchableToken().then((searchTerm) => {
+      const partial = searchTerm.slice(0, 2);
 
-      chatHistoryPage.getHistoryItemCount().then((partialCount: number) => {
-        chatHistoryPage.typeInSearch(searchTerm);
-        cy.wait('@searchChatsByProject').its('response.statusCode').should('eq', 200);
-        chatHistoryPage.getHistoryItemCount().should('be.at.most', partialCount);
+      page.typeInSearch(partial);
+      cy.wait(`@${ALIASES.searchChats}`).its('response.statusCode').should('eq', 200);
+
+      page.getHistoryItemCount().then((partialCount: number) => {
+        page.typeInSearch(searchTerm);
+        cy.wait(`@${ALIASES.searchChats}`).its('response.statusCode').should('eq', 200);
+
+        page.getHistoryItemCount().should('be.at.most', partialCount);
       });
     });
   });
 
   it('C698147 - Verify search is case-insensitive.', () => {
-    getSearchableTerm().then((searchTerm) => {
-      chatHistoryPage.typeInSearch(searchTerm.toLowerCase());
-      cy.wait('@searchChatsByProject').its('response.statusCode').should('eq', 200);
+    getSearchableToken().then((searchTerm) => {
+      page.typeInSearch(searchTerm.toLowerCase());
+      cy.wait(`@${ALIASES.searchChats}`).its('response.statusCode').should('eq', 200);
 
-      chatHistoryPage.getHistoryItemCount().then((lowerCount: number) => {
-        chatHistoryPage.typeInSearch(searchTerm.toUpperCase());
-        cy.wait('@searchChatsByProject').its('response.statusCode').should('eq', 200);
+      page.getHistoryItemCount().then((lowerCount: number) => {
+        page.typeInSearch(searchTerm.toUpperCase());
+        cy.wait(`@${ALIASES.searchChats}`).its('response.statusCode').should('eq', 200);
 
-        chatHistoryPage.getHistoryItemCount().should('eq', lowerCount);
+        page.getHistoryItemCount().should('eq', lowerCount);
       });
     });
   });
 
-  it('C698128 - Verify search ignores leading and trailing spaces.', () => {
-    getSearchableTerm().then((searchTerm) => {
-      chatHistoryPage.setSearchValueWithSpaces(searchTerm);
-      cy.wait('@searchChatsByProject').its('response.statusCode').should('eq', 200);
+  it('C698128 - Verify search trims leading and trailing whitespace.', () => {
+    getSearchableToken().then((searchTerm) => {
+      page.setSearchValueWithSpaces(searchTerm);
+      cy.wait(`@${ALIASES.searchChats}`).its('response.statusCode').should('eq', 200);
 
-      chatHistoryPage.getHistoryItemCount().should('be.greaterThan', 0);
-      chatHistoryPage.getPanel().should('be.visible');
+      page.getHistoryItemCount().should('be.greaterThan', 0);
+      page.getPanel().should('be.visible');
     });
   });
 
-  it('C698129 - Verify search clear button works.', () => {
-    getSearchableTerm().then((searchTerm) => {
-      chatHistoryPage.typeInSearch(searchTerm);
-      cy.wait('@searchChatsByProject').its('response.statusCode').should('eq', 200);
+  // ---------------------------------------------------------------------------
+  // Clear behaviour
+  // ---------------------------------------------------------------------------
 
-      chatHistoryPage.clearSearch();
-      chatHistoryPage.getSearchInput().should('have.value', '');
-      chatHistoryPage.getHistoryItemCount().should('be.greaterThan', 0);
+  it('C698129 - Verify the search clear button resets the input.', () => {
+    getSearchableToken().then((searchTerm) => {
+      page.typeInSearch(searchTerm);
+      cy.wait(`@${ALIASES.searchChats}`).its('response.statusCode').should('eq', 200);
+
+      page.clearSearch();
+      page.getSearchInput().should('have.value', '');
+      page.getHistoryItemCount().should('be.greaterThan', 0);
     });
   });
 
-  it('C698144 - Verify clearing search restores full chat history list.', () => {
-    getSearchableTerm().then((searchTerm) => {
-      chatHistoryPage.getHistoryItemCount().then((initialCount: number) => {
-        chatHistoryPage.typeInSearch(searchTerm);
-        cy.wait('@searchChatsByProject').its('response.statusCode').should('eq', 200);
+  it('C698144 - Verify clearing the search restores the full history list.', () => {
+    getSearchableToken().then((searchTerm) => {
+      page.getHistoryItemCount().then((initialCount: number) => {
+        page.typeInSearch(searchTerm);
+        cy.wait(`@${ALIASES.searchChats}`).its('response.statusCode').should('eq', 200);
 
-        chatHistoryPage.clearSearch();
-        chatHistoryPage.getHistoryItemCount().should('eq', initialCount);
+        page.clearSearch();
+        page.getHistoryItemCount().should('eq', initialCount);
       });
     });
   });
 
-  it('C698150 - Verify selected history item remains selected after search is cleared.', () => {
-    // Select a chat first and capture its header title
-    chatHistoryPage.selectHistoryItemByIndex(0);
-    chatHistoryPage.getChatHeaderTitle().invoke('text').then((loadedTitle: string) => {
+  it('C698150 - Verify the selected chat remains active after search is cleared.', () => {
+    page.selectHistoryItemByIndex(0);
+    page.getChatHeaderTitle().invoke('text').then((loadedTitle: string) => {
       const normalizedTitle = loadedTitle.trim();
 
-      getSearchableTerm().then((searchTerm) => {
-        chatHistoryPage.typeInSearch(searchTerm);
-        cy.wait('@searchChatsByProject').its('response.statusCode').should('eq', 200);
-        chatHistoryPage.clearSearch();
+      getSearchableToken().then((searchTerm) => {
+        page.typeInSearch(searchTerm);
+        cy.wait(`@${ALIASES.searchChats}`).its('response.statusCode').should('eq', 200);
+        page.clearSearch();
 
-        // After clearing search the full list must be restored
-        chatHistoryPage.getHistoryItemCount().should('be.greaterThan', 0);
-        chatHistoryPage.getPanel().should('be.visible');
+        page.getHistoryItemCount().should('be.greaterThan', 0);
+        page.getPanel().should('be.visible');
 
-        // The previously loaded chat should still be shown in the header (selection preserved)
-        chatHistoryPage.getChatHeaderTitle().invoke('text').should((headerTitle: string) => {
+        page.getChatHeaderTitle().invoke('text').should((headerTitle: string) => {
           expect(headerTitle.trim()).to.eq(normalizedTitle);
         });
       });
     });
   });
 
-  it('C698132 - Verify search works with special characters in query.', () => {
-    chatHistoryPage.typeInSearch('!@#$%^&*');
-    cy.wait('@searchChatsByProject').its('response.statusCode').should('eq', 200);
+  // ---------------------------------------------------------------------------
+  // Edge cases
+  // ---------------------------------------------------------------------------
 
-    chatHistoryPage.getPanel().should('be.visible');
-    // Special characters produce no matches or the full list — both are valid outcomes;
-    // the key contract is that no error/crash occurs and the panel stays rendered.
-    chatHistoryPage.getHistoryItemCount().should('be.gte', 0);
+  it('C698132 - Verify search handles special characters without crashing.', () => {
+    page.typeInSearch('!@#$%^&*');
+    cy.wait(`@${ALIASES.searchChats}`).its('response.statusCode').should('eq', 200);
+
+    page.getPanel().should('be.visible');
+    // Special characters may match nothing or everything — both are valid; no error is the contract.
+    page.getHistoryItemCount().should('be.gte', 0);
   });
 
-  it('C698133 - Verify search works when query is empty.', () => {
-    chatHistoryPage.typeInSearch('');
-    chatHistoryPage.getSearchInput().should('have.value', '');
-    // An empty query must restore the full list — we seeded at least 1 item in beforeEach.
-    chatHistoryPage.getHistoryItemCount().should('be.gte', 1);
+  it('C698133 - Verify an empty search query restores the full list.', () => {
+    page.typeInSearch('');
+    page.getSearchInput().should('have.value', '');
+    // We seeded at least 1 item — the full list must come back.
+    page.getHistoryItemCount().should('be.gte', 1);
   });
 
-  it('C698134 - Verify user can search renamed titles.', () => {
-    cy.fixture('chatHistory').then((chatHistoryData: any) => {
-      chatHistoryPage.openHistoryMenuByIndex(0);
-      chatHistoryPage.clickEditAction();
-      chatHistoryPage.updateTitle(chatHistoryData.updatedTitle);
-      cy.wait('@updateChatTitle').its('response.statusCode').should('eq', 200);
+  // ---------------------------------------------------------------------------
+  // Cross-action search integrity
+  // ---------------------------------------------------------------------------
 
-      chatHistoryPage.typeInSearch(chatHistoryData.updatedTitle);
-      cy.wait('@searchChatsByProject').its('response.statusCode').should('eq', 200);
-      chatHistoryPage.getHistoryItemByIndex(0).should('contain.text', chatHistoryData.updatedTitle);
+  it('C698134 - Verify renamed chats are discoverable by their new title.', () => {
+    cy.fixture('chatHistory').then((data: any) => {
+      page.openHistoryMenuByIndex(0);
+      page.clickEditAction();
+      page.typeEditTitle(data.updatedTitle);
+      page.clickEditUpdate();
+      cy.wait(`@${ALIASES.updateTitle}`).its('response.statusCode').should('eq', 200);
+
+      page.typeInSearch(data.updatedTitle);
+      cy.wait(`@${ALIASES.searchChats}`).its('response.statusCode').should('eq', 200);
+
+      page.getHistoryItemByIndex(0).should('contain.text', data.updatedTitle);
     });
   });
 
-  it('C698148 - Verify search does not match deleted history items.', () => {
-    chatHistoryPage.getHistoryItemTextByIndex(0).then((deletedTitle: string) => {
+  it('C698148 - Verify deleted chats are not returned in search results.', () => {
+    page.getHistoryItemTextByIndex(0).then((deletedTitle: string) => {
       const normalizedTitle = deletedTitle.trim();
-      chatHistoryPage.openHistoryMenuByIndex(0);
-      chatHistoryPage.clickDeleteAction();
-      chatHistoryPage.confirmDelete();
-      cy.wait('@deleteChat').its('response.statusCode').should('eq', 200);
 
-      chatHistoryPage.typeInSearch(normalizedTitle);
-      cy.wait('@searchChatsByProject').its('response.statusCode').should('eq', 200);
-      // getHistoryItems() throws when no elements exist, causing a false failure.
-      chatHistoryPage.getPanel().should('not.contain.text', normalizedTitle);
+      page.openHistoryMenuByIndex(0);
+      page.clickDeleteAction();
+      page.confirmDelete();
+      cy.wait(`@${ALIASES.deleteChat}`).its('response.statusCode').should('eq', 200);
+
+      page.typeInSearch(normalizedTitle);
+      cy.wait(`@${ALIASES.searchChats}`).its('response.statusCode').should('eq', 200);
+
+      // getHistoryItems() throws on empty DOM — use panel text check instead.
+      page.getPanel().should('not.contain.text', normalizedTitle);
     });
   });
 
-  it('C775314 - Verify searching no match shows No Conversation History.', () => {
-    cy.fixture('chatHistory').then((chatHistoryData: any) => {
-      chatHistoryPage.typeInSearch(chatHistoryData.searchNoMatchTerm);
-      cy.wait('@searchChatsByProject').its('response.statusCode').should('eq', 200);
+  it('C775314 - Verify a no-match search shows the "No Conversation History" empty state.', () => {
+    cy.fixture('chatHistory').then((data: any) => {
+      page.typeInSearch(data.searchNoMatchTerm);
+      cy.wait(`@${ALIASES.searchChats}`).its('response.statusCode').should('eq', 200);
 
-      chatHistoryPage.getEmptyState().should('contain.text', 'No Conversation History');
-      chatHistoryPage.getHistoryItemCount().should('eq', 0);
+      page.getEmptyState().should('contain.text', 'No Conversation History');
+      page.getHistoryItemCount().should('eq', 0);
     });
   });
 });
