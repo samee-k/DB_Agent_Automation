@@ -7,6 +7,26 @@ describe('Click on Suggested Prompt', () => {
   const page = new InitialPromptPage();
   const sh = new SuggestionHelper(page);
 
+  const openSuggestions = (seed = 'A') => {
+    sh.openSuggestions(seed);
+    sh.getVisibleSuggestions().should('have.length.greaterThan', 0);
+  };
+
+  const assertSuggestionsHidden = () => {
+    cy.get('body').then(($body: JQuery<HTMLElement>) => {
+      const visible = $body.find(SUGGESTION_ITEM_SELECTOR).filter(':visible');
+      expect(visible.length, 'suggestions should be hidden').to.eq(0);
+    });
+  };
+
+  const stubChatRequest = () => {
+    cy.intercept('POST', '**/chat**', (req) => {
+      req.continue((res) => {
+        res.setDelay(300);
+      });
+    }).as('chatRequest');
+  };
+
   const assertCursorAtEnd = () => {
     // Verify cursor is at the end by typing a marker character and checking it appears at the end.
     page.messageInput().type('|');
@@ -17,18 +37,26 @@ describe('Click on Suggested Prompt', () => {
     page.messageInput().type('{backspace}');
   };
 
-  before(() => sh.setupSuite());
-  beforeEach(() => sh.setupTest());
+  before(() => {
+    cy.loginBySession();
+  });
+
+  beforeEach(() => {
+    cy.loginBySession();
+    page.openChatPage();
+    cy.contains(/Welcome to DB Agent/i, { timeout: 30000 }).should('be.visible');
+    page.clearPrompt();
+  });
 
   it('C701492 - Verify no suggestion is highlighted before first arrow-key press.', () => {
-    sh.openSuggestions('A');
+    openSuggestions('A');
     sh.getSelectedCount().then((count) => {
       expect(count).to.eq(0);
     });
   });
 
   it('C679716 - Verify hover highlights suggestion without populating input.', () => {
-    sh.openSuggestions('A');
+    openSuggestions('A');
 
     sh.getVisibleSuggestions().first().as('firstSuggestion');
 
@@ -53,7 +81,7 @@ describe('Click on Suggested Prompt', () => {
   });
 
   it('C679713 - Verify clicking suggestion populates input field.', () => {
-    sh.openSuggestions('A');
+    openSuggestions('A');
 
     sh.getVisibleSuggestions().first().invoke('text').then((selectedText: string) => {
       const expected = selectedText.trim();
@@ -66,13 +94,13 @@ describe('Click on Suggested Prompt', () => {
   });
 
   it('C691037 - Verify cursor is positioned at end after click-to-populate action.', () => {
-    sh.openSuggestions('A');
+    openSuggestions('A');
     sh.getVisibleSuggestions().first().click();
     assertCursorAtEnd();
   });
 
   it('C679714 - Verify user can edit populated suggestion text.', () => {
-    sh.openSuggestions('A');
+    openSuggestions('A');
     sh.getVisibleSuggestions().first().click();
 
     page.messageInput().type(' updated');
@@ -82,7 +110,7 @@ describe('Click on Suggested Prompt', () => {
   });
 
   it('C679769 - Verify cursor position preserved during text edits including mid-text modifications.', () => {
-    sh.openSuggestions('A');
+    openSuggestions('A');
     sh.getVisibleSuggestions().first().click();
 
     page.messageInput().type('{leftArrow}{leftArrow}X');
@@ -93,7 +121,7 @@ describe('Click on Suggested Prompt', () => {
   });
 
   it('C679715 - Verify Send button activates upon selecting a suggested prompt.', () => {
-    sh.openSuggestions('A');
+    openSuggestions('A');
     sh.getVisibleSuggestions().first().click();
 
     page.sendButton()
@@ -105,13 +133,13 @@ describe('Click on Suggested Prompt', () => {
   });
 
   it('C691036 - Verify suggestion dropdown disappears after click-to-populate.', () => {
-    sh.openSuggestions('A');
+    openSuggestions('A');
     sh.getVisibleSuggestions().first().click();
-    sh.expectSuggestionsHidden();
+    assertSuggestionsHidden();
   });
 
   it('C691033 - Verify suggestions hide when complete prompt is typed.', () => {
-    sh.openSuggestions('A');
+    openSuggestions('A');
 
     sh.getVisibleSuggestions().first().invoke('text').then((fullSuggestionRaw: string) => {
       const fullSuggestion = fullSuggestionRaw.trim();
@@ -127,13 +155,13 @@ describe('Click on Suggested Prompt', () => {
   });
 
   it('C700463 - Verify suggestions dropdown disappears when input is cleared.', () => {
-    sh.openSuggestions('A');
+    openSuggestions('A');
     page.clearPrompt();
-    sh.expectSuggestionsHidden();
+    assertSuggestionsHidden();
   });
 
   it('C700465 - Verify suggestions do not overlap the Send button.', () => {
-    sh.openSuggestions('A');
+    openSuggestions('A');
 
     cy.get(SUGGESTION_CONTAINER_SELECTOR).filter(':visible').first().then(($container: JQuery<HTMLElement>) => {
       page.sendButton().then(($sendBtn: JQuery<HTMLElement>) => {
@@ -153,7 +181,7 @@ describe('Click on Suggested Prompt', () => {
   });
 
   it('C690709 - Verify Up Arrow selects the last suggestion in dropdown.', () => {
-    sh.openSuggestions('A');
+    openSuggestions('A');
 
     sh.getVisibleSuggestions().then(($options: JQuery<HTMLElement>) => {
       const lastText = ($options[$options.length - 1].textContent ?? '').trim();
@@ -166,7 +194,7 @@ describe('Click on Suggested Prompt', () => {
   });
 
   it('C691025 - Verify Down Arrow selects the first suggestion in dropdown.', () => {
-    sh.openSuggestions('A');
+    openSuggestions('A');
 
     sh.getVisibleSuggestions().first().then(($first: JQuery<HTMLElement>) => {
       const firstText = ($first.text() ?? '').trim();
@@ -179,7 +207,7 @@ describe('Click on Suggested Prompt', () => {
   });
 
   it('C688023 - Verify arrow navigation selects suggestion and Enter populates input.', () => {
-    sh.openSuggestions('A');
+    openSuggestions('A');
     page.messageInput().type('{downarrow}');
 
     sh.getSelectedText().then((selectedText) => {
@@ -192,17 +220,17 @@ describe('Click on Suggested Prompt', () => {
   });
 
   it('C690221 - Verify arrow-key-selected suggestion executes with Enter/Submit without refocusing.', () => {
-    sh.stubChatRequest();
+    stubChatRequest();
 
-    sh.openSuggestions('A');
+    openSuggestions('A');
     page.messageInput().type('{downarrow}{enter}{enter}');
 
     cy.wait('@chatRequest');
   });
 
   it('C689867 - Verify mouse-selected suggestion executes with Enter/Submit without refocusing.', () => {
-    sh.stubChatRequest();
-    sh.openSuggestions('A');
+    stubChatRequest();
+    openSuggestions('A');
 
     // Use realClick to simulate a physical mouse click
     sh.getVisibleSuggestions().first().realClick();
@@ -215,7 +243,7 @@ describe('Click on Suggested Prompt', () => {
 
 
   it('C679717 - Verify sequential clicking multiple suggestions behaves correctly.', () => {
-    sh.openSuggestions('A');
+    openSuggestions('A');
 
     // Click first suggestion and verify it populates input.
     sh.getVisibleSuggestions().first().invoke('text').then((firstText: string) => {
@@ -228,7 +256,7 @@ describe('Click on Suggested Prompt', () => {
     });
 
     // Click a different suggestion and verify it replaces the previous.
-    sh.openSuggestions('A');
+    openSuggestions('A');
     sh.getVisibleSuggestions().eq(1).invoke('text').then((secondText: string) => {
       const secondExpected = secondText.trim();
       sh.getVisibleSuggestions().eq(1).click();
@@ -241,7 +269,7 @@ describe('Click on Suggested Prompt', () => {
 
   it('C691039 - Verify clicking a suggestion does not affect URL or page state.', () => {
     cy.url().then((urlBefore) => {
-      sh.openSuggestions('A');
+      openSuggestions('A');
       sh.getVisibleSuggestions().first().click();
 
       cy.url().should('eq', urlBefore);
