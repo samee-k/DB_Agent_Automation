@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { UserPromptActionsPage } from '../../pages/UserPromptActionsPage';
+import { UserPromptActionsPage } from '../../support/pages/UserPromptActionsPage';
 
 describe('User Prompt Actions - Copy and Edit', () => {
   const page = new UserPromptActionsPage();

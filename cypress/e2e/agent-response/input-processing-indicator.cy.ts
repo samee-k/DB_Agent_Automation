@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { InputProcessingIndicatorPage } from '../../pages/InputProcessingIndicatorPage';
+import { InputProcessingIndicatorPage } from '../../support/pages/InputProcessingIndicatorPage';
 import {
   DELAYS,
   assertEditSafelyHandled,
@@ -13,7 +13,7 @@ import {
   interceptDelayedSuccess,
   startLoading,
   waitFor,
-} from './input-processing-indicator.helpers';
+} from '../../support/helpers/input-processing-indicator.helpers';
 
 describe('Input Processing Indicator', () => {
   const page = new InputProcessingIndicatorPage();

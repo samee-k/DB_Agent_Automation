@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { InputProcessingIndicatorPage } from '../../pages/InputProcessingIndicatorPage';
+import { InputProcessingIndicatorPage } from '../pages/InputProcessingIndicatorPage';
 
 export const DELAYS = {
   quick: 1200,

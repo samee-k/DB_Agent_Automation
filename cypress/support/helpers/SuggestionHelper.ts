@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { InitialPromptPage } from './InitialPromptPage';
+import { InitialPromptPage } from '../pages/InitialPromptPage';
 
 export const SUGGESTION_ITEM_SELECTOR = '.floating-suggestion-box .suggestion-item';
 export const SUGGESTION_CONTAINER_SELECTOR = '.floating-suggestion-box';

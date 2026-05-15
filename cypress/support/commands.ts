@@ -1,11 +1,11 @@
 /// <reference types="cypress" />
 
-import { loginBySessionUi } from '../services/api/auth.service';
+import { loginBySessionUi } from './api/auth.service';
 import {
   clearChatsByProjectViaApiService,
   ensureChatsByProjectMinCountService,
   seedChatsByProjectViaApiIfEmptyService,
-} from '../services/api/chat.service';
+} from './api/chat.service';
 
 export function loginBySession() {
 	loginBySessionUi();

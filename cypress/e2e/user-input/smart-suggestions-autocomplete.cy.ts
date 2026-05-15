@@ -1,7 +1,7 @@
 /// <reference types="cypress" />
 
-import { InitialPromptPage } from '../../pages/InitialPromptPage';
-import { SuggestionHelper, SUGGESTION_CONTAINER_SELECTOR, SUGGESTION_ITEM_SELECTOR } from '../../pages/SuggestionHelper';
+import { InitialPromptPage } from '../../support/pages/InitialPromptPage';
+import { SuggestionHelper, SUGGESTION_CONTAINER_SELECTOR, SUGGESTION_ITEM_SELECTOR } from '../../support/helpers/SuggestionHelper';
 
 describe('Smart Suggestions / Auto-complete', () => {
   const page = new InitialPromptPage();

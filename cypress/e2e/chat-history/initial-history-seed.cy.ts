@@ -1,12 +1,12 @@
 /// <reference types="cypress" />
 
-import { ChatHistoryPage } from '../../pages/ChatHistoryPage';
+import { ChatHistoryPage } from '../../support/pages/ChatHistoryPage';
 import {
   ALIASES,
   Chat,
   fetchChatList,
   interceptGetChats,
-} from './chat-history.helpers';
+} from '../../support/helpers/chat-history.helpers';
 
 /**
  * Initial History Seed

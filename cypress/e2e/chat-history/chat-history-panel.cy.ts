@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { ChatHistoryPage } from '../../pages/ChatHistoryPage';
+import { ChatHistoryPage } from '../../support/pages/ChatHistoryPage';
 import {
   ALIASES,
   Chat,
@@ -12,7 +12,7 @@ import {
   pollUntilChatCountGrows,
   pollUntilChatCountGrowsAndPreserves,
   seedAndVisit,
-} from './chat-history.helpers';
+} from '../../support/helpers/chat-history.helpers';
 
 describe('Chat History — Panel', () => {
   const page = new ChatHistoryPage();

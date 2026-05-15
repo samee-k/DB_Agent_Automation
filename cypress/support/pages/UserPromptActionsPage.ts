@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { CHAT_INPUT_SELECTOR, SEND_BUTTON_SELECTORS, USER_MESSAGE_SELECTOR } from './CommonSelectors';
+import { CHAT_INPUT_SELECTOR, SEND_BUTTON_SELECTORS, USER_MESSAGE_SELECTOR } from '../selectors/CommonSelectors';
 
 export class UserPromptActionsPage {
   readonly chatPath = Cypress.env('chatPath') ?? '/dbagent/11/chat';

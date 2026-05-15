@@ -1,7 +1,7 @@
 /// <reference types="cypress" />
 
-import { LoginPage } from '../pages/LoginPage';
-import { UsersFixture } from '../support/types/testData';
+import { LoginPage } from '../../support/pages/LoginPage';
+import { UsersFixture } from '../../support/types/testData';
 
 describe('Login Feature (15/15 test cases)', () => {
   const loginPage = new LoginPage();

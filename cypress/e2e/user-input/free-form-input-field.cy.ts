@@ -1,7 +1,7 @@
 /// <reference types="cypress" />
 
-import { InitialPromptPage } from '../../pages/InitialPromptPage';
-import { MESSAGE_SELECTOR, CHAT_TITLE_SELECTOR } from '../../pages/CommonSelectors';
+import { InitialPromptPage } from '../../support/pages/InitialPromptPage';
+import { MESSAGE_SELECTOR, CHAT_TITLE_SELECTOR } from '../../support/selectors/CommonSelectors';
 
 describe('Free-form Text Input Field Behaviour', () => {
   const page = new InitialPromptPage();

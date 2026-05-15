@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { NewChatPage } from '../../pages/NewChatPage';
+import { NewChatPage } from '../../support/pages/NewChatPage';
 
 describe('Navigation and Header - + New Chat', () => {
   const page = new NewChatPage();

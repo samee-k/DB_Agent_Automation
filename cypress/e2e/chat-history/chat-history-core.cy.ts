@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { ChatHistoryPage } from '../../pages/ChatHistoryPage';
+import { ChatHistoryPage } from '../../support/pages/ChatHistoryPage';
 import {
   ALIASES,
   interceptGetChats,
@@ -8,7 +8,7 @@ import {
   assertNoSessionIdInUrl,
   suppressExpectedInvalidSessionErrors,
   visitInvalidSessionAndAssertErrorState,
-} from './chat-history.helpers';
+} from '../../support/helpers/chat-history.helpers';
 
 describe('Chat History — Core', () => {
   const page = new ChatHistoryPage();

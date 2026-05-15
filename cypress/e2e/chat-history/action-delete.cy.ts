@@ -1,12 +1,12 @@
 /// <reference types="cypress" />
 
-import { ChatHistoryPage } from '../../pages/ChatHistoryPage';
+import { ChatHistoryPage } from '../../support/pages/ChatHistoryPage';
 import {
   ALIASES,
   interceptDeleteChat,
   interceptGetChats,
   seedAndVisit,
-} from './chat-history.helpers';
+} from '../../support/helpers/chat-history.helpers';
 
 describe('Chat History — Action (Delete)', () => {
   const page = new ChatHistoryPage();

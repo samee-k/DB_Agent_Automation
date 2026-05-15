@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { ChatHistoryPage } from '../../pages/ChatHistoryPage';
+import { ChatHistoryPage } from '../pages/ChatHistoryPage';
 
 // ---------------------------------------------------------------------------
 // Intercept alias names — single source of truth across all chat-history specs.

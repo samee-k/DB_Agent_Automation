@@ -1,11 +1,11 @@
 /// <reference types="cypress" />
 
-import { ChatHistoryPage } from '../../pages/ChatHistoryPage';
+import { ChatHistoryPage } from '../../support/pages/ChatHistoryPage';
 import {
   ALIASES,
   interceptUpdateTitle,
   seedAndVisit,
-} from './chat-history.helpers';
+} from '../../support/helpers/chat-history.helpers';
 
 describe('Chat History — Action (Edit)', () => {
   const page = new ChatHistoryPage();
@@ -24,7 +24,7 @@ describe('Chat History — Action (Edit)', () => {
   });
 
   it('C698110 - Verify that the user can edit the chat title.', () => {
-    cy.fixture('chatHistory').then((data: any) => {
+    cy.fixture('chat-history').then((data: any) => {
       const uniqueTitle = `${data.updatedTitle} ${Date.now()}`;
 
       page.openHistoryMenuByIndex(0);
@@ -42,7 +42,7 @@ describe('Chat History — Action (Edit)', () => {
   });
 
   it('C698124 - Verify that editing the chat title handles special characters correctly.', () => {
-    cy.fixture('chatHistory').then((data: any) => {
+    cy.fixture('chat-history').then((data: any) => {
       page.openHistoryMenuByIndex(0);
       page.clickEditAction();
       page.typeEditTitle(data.specialCharTitle);
@@ -58,7 +58,7 @@ describe('Chat History — Action (Edit)', () => {
   });
 
   it('C698111 - Verify that the 50-character title limit is enforced.', () => {
-    cy.fixture('chatHistory').then((data: any) => {
+    cy.fixture('chat-history').then((data: any) => {
       const overLimitTitle = `${data.maxLengthTitle}EXTRA`;
 
       page.openHistoryMenuByIndex(0);
@@ -96,7 +96,7 @@ describe('Chat History — Action (Edit)', () => {
   });
 
   it('C700502 - Verify that the Edit flow supports both confirm and cancel actions.', () => {
-    cy.fixture('chatHistory').then((data: any) => {
+    cy.fixture('chat-history').then((data: any) => {
       page.getHistoryItemTextByIndex(0).then((originalTitle: string) => {
         const normalizedOriginal = originalTitle.trim();
 
@@ -120,7 +120,7 @@ describe('Chat History — Action (Edit)', () => {
   });
 
   it('C698112 - Verify that cancelling Edit discards changes and restores the original title.', () => {
-    cy.fixture('chatHistory').then((data: any) => {
+    cy.fixture('chat-history').then((data: any) => {
       page.getHistoryItemTextByIndex(0).then((originalTitle: string) => {
         const normalizedOriginal = originalTitle.trim();
 
@@ -136,7 +136,7 @@ describe('Chat History — Action (Edit)', () => {
 
   it('C698123 - Verify rapid item selection followed by an edit produces no duplicates.', () => {
     requireMinItems(2).then(() => {
-      cy.fixture('chatHistory').then((data: any) => {
+      cy.fixture('chat-history').then((data: any) => {
         page.getHistoryItems().its('length').then((initialCount: number) => {
           const uniqueTitle = `${data.updatedTitle} ${Date.now()}`;
 
@@ -160,7 +160,7 @@ describe('Chat History — Action (Edit)', () => {
 
   it('C698127 - Verify editing one chat does not overwrite another selected chat.', () => {
     requireMinItems(2).then(() => {
-      cy.fixture('chatHistory').then((data: any) => {
+      cy.fixture('chat-history').then((data: any) => {
         page.getHistoryItemTextByIndex(1).then((secondTitle: string) => {
           const preservedTitle = secondTitle.trim();
           const uniqueTitle = `${data.updatedTitle} ${Date.now()}`;
@@ -182,7 +182,7 @@ describe('Chat History — Action (Edit)', () => {
   });
 
   it('C698141 - Verify editing the active chat title does not reload the conversation.', () => {
-    cy.fixture('chatHistory').then((data: any) => {
+    cy.fixture('chat-history').then((data: any) => {
       const uniqueTitle = `${data.updatedTitle} ${Date.now()}`;
 
       page.selectHistoryItemByIndex(0);
@@ -202,7 +202,7 @@ describe('Chat History — Action (Edit)', () => {
 
   it('C782432 - Verify that an edited chat sorts to the top of the list without page reload.', () => {
     requireMinItems(2).then(() => {
-      cy.fixture('chatHistory').then((data: any) => {
+      cy.fixture('chat-history').then((data: any) => {
         const uniqueTitle = `${data.updatedTitle} MoveTop ${Date.now()}`;
 
         page.getHistoryItems().its('length').then((initialCount: number) => {

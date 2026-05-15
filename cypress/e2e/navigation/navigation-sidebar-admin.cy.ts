@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { NavigationPage } from '../../pages/NavigationPage';
+import { NavigationPage } from '../../support/pages/NavigationPage';
 import { MenuItem } from '../../support/types/testData';
 
 const SELECTORS = {

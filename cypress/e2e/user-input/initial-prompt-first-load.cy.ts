@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { InitialPromptPage } from '../../pages/InitialPromptPage';
+import { InitialPromptPage } from '../../support/pages/InitialPromptPage';
 
 describe('Initial Prompt Options on First Load', () => {
   const page = new InitialPromptPage();

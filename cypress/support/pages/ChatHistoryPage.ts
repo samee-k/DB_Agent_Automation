@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { CHAT_INPUT_SELECTOR, SEND_BUTTON_SELECTOR } from './CommonSelectors';
+import { CHAT_INPUT_SELECTOR, SEND_BUTTON_SELECTOR } from '../selectors/CommonSelectors';
 
 export class ChatHistoryPage {
   // TODO(QA-DATACY): Replace every fallback selector with data-cy once available.

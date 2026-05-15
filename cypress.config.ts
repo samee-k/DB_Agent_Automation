@@ -34,8 +34,8 @@ export default defineConfig({
       return config;
     },
     excludeSpecPattern: [
-      'cypress/e2e/login.cy.ts',
-      'cypress/e2e/agent response/input-processing-indicator.cy.ts',
+      'cypress/e2e/auth/login.cy.ts',
+      'cypress/e2e/agent-response/input-processing-indicator.cy.ts',
     ]
   },
 });

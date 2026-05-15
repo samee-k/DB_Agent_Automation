@@ -1,13 +1,13 @@
 /// <reference types="cypress" />
 
-import { ChatHistoryPage } from '../../pages/ChatHistoryPage';
+import { ChatHistoryPage } from '../../support/pages/ChatHistoryPage';
 import {
   ALIASES,
   interceptDeleteChat,
   interceptSearchChats,
   interceptUpdateTitle,
   seedAndVisit,
-} from './chat-history.helpers';
+} from '../../support/helpers/chat-history.helpers';
 
 describe('Chat History — Search', () => {
   const page = new ChatHistoryPage();
@@ -163,7 +163,7 @@ describe('Chat History — Search', () => {
   // ---------------------------------------------------------------------------
 
   it('C698134 - Verify renamed chats are discoverable by their new title.', () => {
-    cy.fixture('chatHistory').then((data: any) => {
+    cy.fixture('chat-history').then((data: any) => {
       page.openHistoryMenuByIndex(0);
       page.clickEditAction();
       page.typeEditTitle(data.updatedTitle);
@@ -195,7 +195,7 @@ describe('Chat History — Search', () => {
   });
 
   it('C775314 - Verify a no-match search shows the "No Conversation History" empty state.', () => {
-    cy.fixture('chatHistory').then((data: any) => {
+    cy.fixture('chat-history').then((data: any) => {
       page.typeInSearch(data.searchNoMatchTerm);
       cy.wait(`@${ALIASES.searchChats}`).its('response.statusCode').should('eq', 200);
 
