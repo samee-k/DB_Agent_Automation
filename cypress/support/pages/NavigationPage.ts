@@ -147,6 +147,15 @@ export class NavigationPage {
       .invoke('text');
   }
 
+  // Logout — matches the actual app flow:
+  // #dropdown-basic → hover "My profile" → #subcategories panel → click "Logout"
+  clickLogout(): void {
+    cy.get('#dropdown-basic').should('be.visible').click();
+    cy.contains('My profile').trigger('mouseover');
+    cy.get('#subcategories').should('be.visible');
+    cy.contains('Logout').click();
+  }
+
   // Helper: Wait for navigation to complete
   waitForNavigation(): Cypress.Chainable<any> {
     return cy.location('pathname', { timeout: 30000 }).should('match', /\/dbagent\/\d+\/chat/);
