@@ -181,7 +181,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     });
   });
 
-  it('C720001 - Verify UI and backend handle very long pasted prompts without freezing.', () => {
+  it('C679763 - Verify UI and backend handle very long pasted prompts without freezing.', () => {
     stubChatRequest();
 
     page.messageInput().then(($input: JQuery<HTMLElement>) => {
@@ -217,7 +217,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     });
   });
 
-  it('C720002 - Verify that users can copy text from the text box.', () => {
+  it('C691028 - Verify that users can copy text from the text box.', () => {
     const copySource = 'Copy text from input field';
 
     page.typePrompt(copySource);
@@ -302,7 +302,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     cy.then(() => expect(chatRequestCount, 'two requests for two prompts').to.eq(2));
   });
 
-  it('C720003 - Verify conversation context is preserved across follow-up prompts.', () => {
+  it('C700474 - Verify conversation context is preserved across follow-up prompts.', () => {
     const firstPrompt = 'Context question one: users table';
     const secondPrompt = 'Context question two: use previous result';
 
@@ -318,7 +318,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     cy.contains(secondPrompt, { timeout: 20000 }).should('be.visible');
   });
 
-  it('C720004 - Verify conversation order is maintained chronologically for multiple follow-ups.', () => {
+  it('C700475 - Verify conversation order is maintained chronologically for multiple follow-ups.', () => {
     stubChatRequest();
 
     const prompts = ['First follow up', 'Second follow up', 'Third follow up'];
@@ -340,7 +340,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     });
   });
 
-  it('C720005 - Verify no duplicate messages appear after response.', () => {
+  it('C700478 - Verify no duplicate messages appear after response.', () => {
     stubChatRequest();
 
     const promptText = 'No duplicates expected';
@@ -354,7 +354,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     });
   });
 
-  it('C720006 - Verify message formatting remains consistent across all messages.', () => {
+  it('C700479 - Verify message formatting remains consistent across all messages.', () => {
     stubChatRequest();
 
     const prompts = ['Formatting check one', 'Formatting check two'];
@@ -391,7 +391,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     page.welcomeTitle().should('not.exist');
   });
 
-  it('C720008 - Verify auto-generated chat title does not exceed max character limit of 50.', () => {
+  it('C698137 - Verify auto-generated chat title does not exceed max character limit of 50.', () => {
     stubChatRequest();
 
     page.appendPrompt('Generate dashboard metrics and detailed weekly trend analysis grouped by region and customer segment');
@@ -403,7 +403,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     });
   });
 
-  it('C720009 - Verify subsequent prompts do not overwrite existing auto-generated chat title.', () => {
+  it('C698138 - Verify subsequent prompts do not overwrite existing auto-generated chat title.', () => {
     stubChatRequest();
 
     page.appendPrompt('First title seed prompt');
@@ -421,7 +421,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     });
   });
 
-  it('C720010 - Verify text selection/copy in prompts, responses, SQL blocks remains functional when input has text.', () => {
+  it('C702080 - Verify text selection/copy in prompts, responses, SQL blocks remains functional when input has text.', () => {
     cy.intercept('POST', '**/chat**', {
       statusCode: 200,
       body: {
@@ -465,7 +465,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     });
   });
 
-  it.skip('C720011 - should preserve typed content as a draft when navigating away and back', () => {
+  it.skip('C679765 - should preserve typed content as a draft when navigating away and back', () => {
     const draftText = 'SELECT * FROM users WHERE status = "active";';
     const previousHistorySelector = [
       '.chat-history-item',
