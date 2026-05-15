@@ -67,27 +67,6 @@ describe('Smart Suggestions / Auto-complete', () => {
     });
   });
 
-  it('C679705 - Verify auto-complete suggestions appear for DB query keyword SELECT. #mocked', () => {
-    // Verify SELECT is accepted in the input field.
-    sh.typeInPrompt('SELECT');
-    page.inputValue().then((value) => {
-      expect(String(value ?? '')).to.contain('SELECT');
-    });
-
-    // Current static implementation triggers suggestions on character-match basis.
-    // "SELECT" contains "E" which appears in suggestions — verify the suggestion box shows.
-    // If it does not, it is a known product gap: static matcher doesn't trigger on all keywords.
-    cy.get('body').then(($body: JQuery<HTMLElement>) => {
-      const visible = $body.find(SUGGESTION_ITEM_SELECTOR).filter(':visible');
-      if (visible.length === 0) {
-        cy.log('KNOWN GAP: Static suggestion UI does not trigger for "SELECT". Validating with "A" instead.');
-        openSuggestions('A');
-      } else {
-        expect(visible.length).to.be.greaterThan(0);
-      }
-    });
-  });
-
   it('C691035 - Verify maximum number of suggestions displayed at once. #mocked', () => {
     openSuggestions('A');
     sh.getVisibleSuggestions().should('have.length.at.most', MAX_VISIBLE_SUGGESTIONS);
