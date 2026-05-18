@@ -15,6 +15,13 @@
     "test:headed": "cypress run --headed",
     "test:chrome": "cypress run --browser chrome",
     "test:firefox": "cypress run --browser firefox",
+    "test:testrail": "TESTRAIL_ENABLED=true cypress run",
+    "test:testrail:chrome": "TESTRAIL_ENABLED=true cypress run --browser chrome",
+    "test:testrail:spec": "TESTRAIL_ENABLED=true cypress run --spec",
+    "test:regression": "cypress run --config specPattern=cypress/e2e/regression/regression.cy.ts",
+    "test:regression:chrome": "cypress run --browser chrome --config specPattern=cypress/e2e/regression/regression.cy.ts",
+    "test:regression:headed": "cypress run --headed --config specPattern=cypress/e2e/regression/regression.cy.ts",
+    "test:regression:testrail": "TESTRAIL_ENABLED=true cypress run --config specPattern=cypress/e2e/regression/regression.cy.ts",
     "lint": "eslint . --ext .ts,.js",
     "lint:fix": "eslint . --ext .ts,.js --fix",
     "type-check": "tsc --noEmit"
