@@ -3,10 +3,10 @@
 import { InputProcessingIndicatorPage } from '../pages/InputProcessingIndicatorPage';
 
 export const DELAYS = {
-  quick: 1200,
-  normal: 2200,
-  long: 4000,
-  cycle: 5000,
+  quick:  600,   // was 1200 — just needs to outlast the intercept setup
+  normal: 1200,  // was 2200 — indicator appears within 300ms, 1.2s is plenty
+  long:   2000,  // was 4000 — enough to assert locked state without extra wait
+  cycle:  2500,  // was 5000 — one full cycle of state labels is ~1s
 } as const;
 
 export const TIMEOUTS = {
