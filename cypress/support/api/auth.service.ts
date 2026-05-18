@@ -51,7 +51,7 @@ export function loginBySessionUi() {
       cy.get('button.btn.btn-primary.btn-lg > span').click();
       cy.url({ timeout: 30000 }).should('not.include', '/login');
     });
-  });
+  }, { cacheAcrossSpecs: true });
 }
 
 export function loginByApiWithEnv() {
