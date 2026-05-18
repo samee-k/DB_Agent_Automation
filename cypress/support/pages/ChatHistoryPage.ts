@@ -172,6 +172,9 @@ export class ChatHistoryPage {
         const visibleToggle = $body.find(this.historyToggle).filter(':visible').first();
         if (visibleToggle.length > 0) {
           cy.wrap(visibleToggle).click({ force: true });
+          // Wait for the panel to actually appear before returning — prevents
+          // callers from racing against the open animation / render.
+          cy.get(this.historyPanel, { timeout: 15000 }).should('be.visible');
         }
       }
     });
