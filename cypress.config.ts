@@ -1,11 +1,14 @@
 import 'dotenv/config';
+import * as fs from 'fs';
+import * as path from 'path';
 import { defineConfig } from 'cypress';
+import { onBeforeRun, onAfterSpec, onAfterRun } from './cypress/plugins/testrail-reporter';
 
 export default defineConfig({
   projectId: 'dskfo2',
   e2e: {
     baseUrl: process.env.CYPRESS_BASE_URL || 'https://devstudio.fuse.ai',
-    specPattern: 'cypress/e2e/**/*.cy.{js,jsx,ts,tsx}',
+    specPattern: 'cypress/e2e/{auth,agent-response,chat-history,navigation,smoke,user-input}/**/*.cy.{js,jsx,ts,tsx}',
     supportFile: 'cypress/support/e2e.ts',
     videosFolder: 'cypress/videos',
     screenshotsFolder: 'cypress/screenshots',
@@ -13,9 +16,9 @@ export default defineConfig({
     screenshotOnRunFailure: true,
     viewportWidth: 1280,
     viewportHeight: 720,
-    defaultCommandTimeout: 10000,
-    requestTimeout: 10000,
-    responseTimeout: 30000,
+    defaultCommandTimeout: 8000,
+    requestTimeout: 8000,
+    responseTimeout: 20000,
     env: {
       USER_EMAIL: process.env.CYPRESS_USER_EMAIL || process.env.USER_EMAIL || '',
       USER_PASSWORD: process.env.CYPRESS_USER_PASSWORD || process.env.USER_PASSWORD || '',
@@ -25,17 +28,31 @@ export default defineConfig({
       chatPath: process.env.CYPRESS_CHAT_PATH || '/dbagent/810/chat',
     },
     setupNodeEvents(on, config) {
+      // Ensure video subdirectories exist before specs run (prevents ffmpeg errors)
+      const videosRoot = path.resolve(__dirname, 'cypress/videos');
+      const specDirs = ['agent-response', 'auth', 'chat-history', 'navigation', 'regression', 'smoke', 'user-input'];
+      specDirs.forEach((dir) => fs.mkdirSync(path.join(videosRoot, dir), { recursive: true }));
+
       on('task', {
         log(message: string) {
           console.log(message);
           return null;
         },
       });
+
+      on('before:run', async (details) => {
+        await onBeforeRun(details as any);
+      });
+
+      on('after:spec', async (spec, results) => {
+        await onAfterSpec(spec, results as any);
+      });
+
+      on('after:run', async () => {
+        await onAfterRun();
+      });
+
       return config;
-    },
-    excludeSpecPattern: [
-      'cypress/e2e/auth/login.cy.ts',
-      'cypress/e2e/agent-response/input-processing-indicator.cy.ts',
-    ]
+    }
   },
 });
