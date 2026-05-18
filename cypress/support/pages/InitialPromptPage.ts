@@ -103,7 +103,7 @@ export class InitialPromptPage {
   appendPrompt(promptText: string) {
     this.messageInput().then(($input: JQuery<HTMLElement>) => {
       this.focusInput($input);
-      cy.wrap($input).type(promptText);
+      cy.wrap($input).type(promptText, { delay: 0 });
     });
     return this;
   }
