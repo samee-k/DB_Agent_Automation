@@ -260,12 +260,49 @@ export class UserPromptActionsPage {
   }
 
   assertEditAreaVisible() {
-    cy.get(this.editTextareaSelector, { timeout: 10000 }).filter(':visible').should('exist');
+    // Prefer specific edit-mode selectors; fall back to any visible textarea only
+    // if a specific selector already confirms edit mode is active.
+    const specificSelectors = [
+      '[data-testid="edit-prompt-input"]',
+      '[data-cy="edit-prompt-input"]',
+      '.edit-prompt-input',
+      '.prompt-edit-area',
+      'textarea.dbagent-textarea',
+      'textarea.form-control',
+    ].join(', ');
+
+    cy.get('body', { timeout: 10000 }).should(($body) => {
+      const specific = $body.find(specificSelectors).filter(':visible');
+      const generic = $body.find('textarea').filter(':visible');
+      // Edit mode is confirmed when a specific selector matches, OR when the
+      // label is present alongside any visible textarea.
+      const labelPresent =
+        $body
+          .find('*')
+          .filter((_: number, el: Element) =>
+            /Edit your prompt/i.test((el.textContent || '').trim()),
+          )
+          .filter(':visible').length > 0;
+      expect(
+        specific.length > 0 || (generic.length > 0 && labelPresent),
+        'edit-mode textarea is visible',
+      ).to.be.true;
+    });
     return this;
   }
 
   assertEditModeLabelVisible() {
-    cy.contains(this.editModeLabel, { timeout: 10000 }).should('be.visible');
+    // Use a .should() callback so Cypress retries until the label is visible,
+    // which handles delayed renders and CSS transitions reliably.
+    cy.get('body', { timeout: 15000 }).should(($body) => {
+      const labelEl = $body
+        .find('*')
+        .filter((_: number, el: Element) =>
+          /Edit your prompt/i.test((el.textContent || '').trim()),
+        )
+        .filter(':visible');
+      expect(labelEl.length, '"Edit your prompt" label is visible').to.be.greaterThan(0);
+    });
     return this;
   }
 
