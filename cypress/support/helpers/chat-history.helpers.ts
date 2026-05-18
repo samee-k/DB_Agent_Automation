@@ -59,11 +59,12 @@ export function seedAndVisit(page: ChatHistoryPage): void {
   cy.wait(`@${ALIASES.getChats}`).its('response.statusCode').should('eq', 200);
 
   page.openHistoryPanel();
-  page.getHistoryItemsOptional().then(($items) => {
-    if ($items.length > 0) {
-      expect($items.length).to.be.greaterThan(0);
-      return;
-    }
+
+  // Retrying assertion — waits until items actually render in the DOM.
+  // If the API seed hasn't committed yet (eventual consistency) or the panel
+  // is slow to populate, this will keep retrying before timing out.
+  page.getHistoryItems().then(($items) => {
+    if ($items.length > 0) return;
 
     // API seeding may be disabled in some environments (e.g., POST /chats returns 405).
     // Create one chat through the UI to guarantee deterministic test preconditions.
