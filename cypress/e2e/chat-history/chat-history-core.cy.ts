@@ -6,7 +6,6 @@ import {
   interceptGetChats,
   interceptSearchChats,
   assertNoSessionIdInUrl,
-  suppressExpectedInvalidSessionErrors,
   visitInvalidSessionAndAssertErrorState,
 } from '../../support/helpers/chat-history.helpers';
 
