@@ -1,5 +1,6 @@
 /// <reference types="cypress" />
 
+import { ChainableEl } from '../types';
 import { CHAT_INPUT_SELECTORS, SEND_BUTTON_SELECTOR } from '../selectors/CommonSelectors';
 
 export class InitialPromptPage {
@@ -62,7 +63,7 @@ export class InitialPromptPage {
     return cy.get(this.appLogoSelector).filter(':visible').first();
   }
 
-  messageInput(): Cypress.Chainable<JQuery<HTMLElement>> {
+  messageInput(): ChainableEl {
     return cy.get(this.chatInputSelector, { timeout: 20000 }).filter(':visible').first();
   }
 

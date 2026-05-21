@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+import { ChainableEl } from '../types';
+
 export class LoginPage {
   private readonly logo = 'img[src*="aI-studio-logo"]';
   private readonly emailInput = '#email';
@@ -16,23 +18,23 @@ export class LoginPage {
     cy.visit('/login');
   }
 
-  getLogo() {
+  getLogo(): ChainableEl {
     return cy.get(this.logo);
   }
 
-  getEmailInput() {
+  getEmailInput(): ChainableEl {
     return cy.get(this.emailInput);
   }
 
-  getPasswordInput() {
+  getPasswordInput(): ChainableEl {
     return cy.get(this.passwordInput);
   }
 
-  getLoginButton() {
+  getLoginButton(): ChainableEl {
     return cy.get(this.loginButton).filter(':visible').first();
   }
 
-  getToastMessage() {
+  getToastMessage(): ChainableEl {
     return cy.get(this.toastMessage, { timeout: 10000 });
   }
 

@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+import { ChainableEl } from '../types';
+
 export class InputProcessingIndicatorPage {
   readonly chatPath = Cypress.env('chatPath') ?? '/dbagent/11/chat';
   readonly sendQueryRoute = '**/api/chats/*/send-query';
@@ -85,11 +87,11 @@ export class InputProcessingIndicatorPage {
 
   // ── Element accessors ─────────────────────────────────────────────────────
 
-  messageInput(): Cypress.Chainable<JQuery<HTMLElement>> {
+  messageInput(): ChainableEl {
     return cy.get(this.promptInputSelector, { timeout: 20000 }).filter(':visible').first();
   }
 
-  sendButton(): Cypress.Chainable<JQuery<HTMLElement>> {
+  sendButton(): ChainableEl {
     return cy.get(this.sendButtonSelector, { timeout: 10000 }).filter(':visible').first();
   }
 

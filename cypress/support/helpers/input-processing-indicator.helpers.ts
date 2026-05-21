@@ -1,6 +1,7 @@
 /// <reference types="cypress" />
 
 import { InputProcessingIndicatorPage } from '../pages/InputProcessingIndicatorPage';
+import { RequestCountRef } from '../types';
 
 export const DELAYS = {
   quick:  600,   // was 1200 — just needs to outlast the intercept setup
@@ -13,10 +14,6 @@ export const TIMEOUTS = {
   indicator: 2500,
   network: 30000,
 } as const;
-
-export interface RequestCountRef {
-  count: number;
-}
 
 export const interceptDelayedSuccess = (
   page: InputProcessingIndicatorPage,

@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+import { ChainableEl } from '../types';
+
 export class NavigationPage {
   // Navigation Selectors - Based on actual application HTML structure
   private readonly navBar = ['nav', '[role="navigation"]', '[data-testid="navbar"]', '.navbar', '.nav', '.menu'].join(', ');
@@ -47,60 +49,60 @@ export class NavigationPage {
   private usersSelector = 'a.menu-item:has(i.icn-users), a.menu-item:contains("Users")';
 
   // Visibility and state checks
-  isNavBarVisible(): Cypress.Chainable<any> {
+  isNavBarVisible(): ChainableEl {
     return cy.get(this.navBar).should('be.visible');
   }
 
-  isNavPaneVisible(): Cypress.Chainable<any> {
+  isNavPaneVisible(): ChainableEl {
     return cy.get(this.navPane).should('be.visible');
   }
 
-  isNavPaneHidden(): Cypress.Chainable<any> {
+  isNavPaneHidden(): ChainableEl {
     return cy.get(this.navPane).should('not.be.visible');
   }
 
-  isMainContentExpanded(): Cypress.Chainable<any> {
+  isMainContentExpanded(): ChainableEl {
     // Verify main content has expanded (width increased or margin adjusted)
     return cy.get(this.mainContent).should('be.visible');
   }
 
   // Collapse/Expand actions
-  clickCollapseButton(): Cypress.Chainable<any> {
+  clickCollapseButton(): ChainableEl {
     return cy.get(this.collapseButton).click();
   }
 
-  clickExpandButton(): Cypress.Chainable<any> {
+  clickExpandButton(): ChainableEl {
     // After collapse, the expand button appears - might be beside the collapsed sidebar
     return cy.get(this.expandButton).first().click();
   }
 
   // Navigation to sections using specific selectors
-  clickMenuItemLabs(): Cypress.Chainable<any> {
+  clickMenuItemLabs(): ChainableEl {
     return cy.get(this.labsSelector).first().click();
   }
 
-  clickMenuItemModels(): Cypress.Chainable<any> {
+  clickMenuItemModels(): ChainableEl {
     return cy.get(this.modelsSelector).first().click();
   }
 
-  clickMenuItemLLMs(): Cypress.Chainable<any> {
+  clickMenuItemLLMs(): ChainableEl {
     return cy.get(this.llmsSelector).first().click();
   }
 
-  clickMenuItemDeployments(): Cypress.Chainable<any> {
+  clickMenuItemDeployments(): ChainableEl {
     return cy.get(this.deploymentsSelector).first().click();
   }
 
-  clickMenuItemUsers(): Cypress.Chainable<any> {
+  clickMenuItemUsers(): ChainableEl {
     return cy.get(this.usersSelector).first().click();
   }
 
-  clickMenuItemChatWithDBAgent(): Cypress.Chainable<any> {
+  clickMenuItemChatWithDBAgent(): ChainableEl {
     return cy.get(this.chatWithDBAgentSelector).first().click();
   }
 
   // Verify selected menu item is highlighted/distinct
-  isMenuItemSelected(itemName: string): Cypress.Chainable<any> {
+  isMenuItemSelected(itemName: string): ChainableEl {
     let selector = this.getMenuItemSelector(itemName);
     
     // Handle specific items
@@ -135,7 +137,7 @@ export class NavigationPage {
   }
 
   // URL navigation checks
-  verifyCurrentUrl(expectedPath: string): Cypress.Chainable<any> {
+  verifyCurrentUrl(expectedPath: string): Cypress.Chainable<string> {
     return cy.url().should('include', expectedPath);
   }
 
@@ -157,23 +159,23 @@ export class NavigationPage {
   }
 
   // Helper: Wait for navigation to complete
-  waitForNavigation(): Cypress.Chainable<any> {
+  waitForNavigation(): Cypress.Chainable<string> {
     return cy.location('pathname', { timeout: 30000 }).should('match', /\/dbagent\/\d+\/chat/);
   }
 
   // Check if navigation pane has specific width or state
-  getNavPaneWidth(): Cypress.Chainable<any> {
+  getNavPaneWidth(): Cypress.Chainable<number> {
     return cy.get(this.navPane).then(($el: JQuery<HTMLElement>) => {
       return $el.width() ?? 0;
     });
   }
 
   // Verify navbar state (expanded/collapsed) by checking nav pane visibility
-  isNavBarExpanded(): Cypress.Chainable<any> {
+  isNavBarExpanded(): ChainableEl {
     return cy.get(this.navPane).should('be.visible');
   }
 
-  isNavBarCollapsed(): Cypress.Chainable<any> {
+  isNavBarCollapsed(): ChainableEl {
     return cy.get(this.navPane).should('not.be.visible');
   }
 }

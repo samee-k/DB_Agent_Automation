@@ -1,5 +1,6 @@
 /// <reference types="cypress" />
 
+import { ChainableEl } from '../types';
 import { CHAT_INPUT_SELECTOR, SEND_BUTTON_SELECTORS, USER_MESSAGE_SELECTOR } from '../selectors/CommonSelectors';
 
 export class UserPromptActionsPage {
@@ -77,7 +78,7 @@ export class UserPromptActionsPage {
 
   // ── Input helpers ─────────────────────────────────────────────────────────
 
-  messageInput(): Cypress.Chainable<JQuery<HTMLElement>> {
+  messageInput(): ChainableEl {
     return cy.get(this.chatInputSelector, { timeout: 20000 }).filter(':visible').first();
   }
 
@@ -137,7 +138,7 @@ export class UserPromptActionsPage {
 
   private activeUserMessageAlias = 'activeUserMessage';
 
-  getUserMessageContaining(text: string, timeoutMs = 30000): Cypress.Chainable<JQuery<HTMLElement>> {
+  getUserMessageContaining(text: string, timeoutMs = 30000): ChainableEl {
     return cy.contains('*', text, { timeout: timeoutMs }).should('be.visible').then(($el: JQuery<HTMLElement>) => {
       const scoped = $el.closest(this.userMessageContainerSelector);
       if (scoped.length > 0) {
@@ -147,7 +148,7 @@ export class UserPromptActionsPage {
     });
   }
 
-  getLastUserMessage(): Cypress.Chainable<JQuery<HTMLElement>> {
+  getLastUserMessage(): ChainableEl {
     return cy.get('body').then(($body: JQuery<HTMLElement>) => {
       const messages = $body.find(this.userMessageContainerSelector).filter(':visible');
       expect(messages.length, 'at least one user message visible').to.be.greaterThan(0);
@@ -181,7 +182,7 @@ export class UserPromptActionsPage {
 
   // ── Copy action ───────────────────────────────────────────────────────────
 
-  private getScopedActionIcon(selector: string, requireVisible = true): Cypress.Chainable<JQuery<HTMLElement>> {
+  private getScopedActionIcon(selector: string, requireVisible = true): ChainableEl {
     return cy.get('body').then(($body: JQuery<HTMLElement>) => {
       const scopedMessage = $body.find('[data-cy-active-user-message="true"]');
       if (scopedMessage.length > 0) {
@@ -200,7 +201,7 @@ export class UserPromptActionsPage {
     });
   }
 
-  getCopyIcon(): Cypress.Chainable<JQuery<HTMLElement>> {
+  getCopyIcon(): ChainableEl {
     return this.getScopedActionIcon(this.copyIconSelector);
   }
 
@@ -224,7 +225,7 @@ export class UserPromptActionsPage {
 
   // ── Edit action ───────────────────────────────────────────────────────────
 
-  getEditIcon(): Cypress.Chainable<JQuery<HTMLElement>> {
+  getEditIcon(): ChainableEl {
     return this.getScopedActionIcon(this.editIconSelector, true);
   }
 
@@ -233,7 +234,7 @@ export class UserPromptActionsPage {
     return this;
   }
 
-  getEditTextarea(): Cypress.Chainable<JQuery<HTMLElement>> {
+  getEditTextarea(): ChainableEl {
     return cy.get(this.editTextareaSelector, { timeout: 10000 }).filter(':visible').first();
   }
 

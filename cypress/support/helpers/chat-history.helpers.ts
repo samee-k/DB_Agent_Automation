@@ -1,6 +1,7 @@
 /// <reference types="cypress" />
 
 import { ChatHistoryPage } from '../pages/ChatHistoryPage';
+import { Chat } from '../types';
 
 // ---------------------------------------------------------------------------
 // Intercept alias names — single source of truth across all chat-history specs.
@@ -86,17 +87,9 @@ export function seedAndVisit(page: ChatHistoryPage): void {
 // API helpers — read the chat list directly from the backend (auth via token
 // stored in localStorage after UI login).
 // ---------------------------------------------------------------------------
-export interface Chat {
-  id: string | number;
-  title?: string;
-}
 
 export function fetchChatList(): Cypress.Chainable<Chat[]> {
-  const rawApiUrl = (Cypress.env('apiUrl') as string) || '';
-  // The local dev server (localhost) typically serves the SPA and does NOT proxy
-  // /api routes.  Fall back to the real API host when a localhost URL is detected.
-  const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)/i.test(rawApiUrl);
-  const apiUrl = isLocalhost ? 'https://qastudio.fuse.ai/api' : rawApiUrl;
+  const apiUrl = (Cypress.env('apiUrl') as string) || '';
   const projectId = Number(Cypress.env('projectId') || '11');
 
   return cy.window().then((win: Window) => {
@@ -108,7 +101,7 @@ export function fetchChatList(): Cypress.Chainable<Chat[]> {
       url: `${apiUrl}/chats/by-project/${projectId}`,
       headers: { Authorization: `Bearer ${accessToken}` },
       failOnStatusCode: false,
-    }).then((res: any) => {
+    }).then((res) => {
       if (res.status < 200 || res.status >= 400) {
         return [] as Chat[];
       }
@@ -117,9 +110,11 @@ export function fetchChatList(): Cypress.Chainable<Chat[]> {
       if (Array.isArray(body?.data?.data)) return body.data.data as Chat[];
       if (Array.isArray(body?.data?.chats)) return body.data.chats as Chat[];
       if (Array.isArray(body?.data?.items)) return body.data.items as Chat[];
+      if (Array.isArray(body?.data?.records)) return body.data.records as Chat[];
       if (Array.isArray(body?.data)) return body.data as Chat[];
       if (Array.isArray(body?.chats)) return body.chats as Chat[];
       if (Array.isArray(body?.items)) return body.items as Chat[];
+      if (Array.isArray(body?.records)) return body.records as Chat[];
       return [] as Chat[];
     });
   });
@@ -134,14 +129,14 @@ export function pollUntilChatCountGrows(
   beforeCount: number,
   retries = 8,
   intervalMs = 1500,
-): Cypress.Chainable<any> {
+): Cypress.Chainable<undefined> {
   return fetchChatList().then((list: Chat[]) => {
     if (list.length > beforeCount) return cy.wrap(undefined);
     expect(retries, `chat count should grow beyond ${beforeCount} within retries`).to.be.greaterThan(0);
     return cy.wait(intervalMs, { log: false }).then(() =>
       pollUntilChatCountGrows(beforeCount, retries - 1, intervalMs),
     );
-  });
+  }) as Cypress.Chainable<undefined>;
 }
 
 export function pollUntilChatCountGrowsAndPreserves(
@@ -149,7 +144,7 @@ export function pollUntilChatCountGrowsAndPreserves(
   preservedIds: string[],
   retries = 8,
   intervalMs = 1500,
-): Cypress.Chainable<any> {
+): Cypress.Chainable<undefined> {
   return fetchChatList().then((list: Chat[]) => {
     const ids = new Set(list.map((c: Chat) => String(c.id)));
     const allPreserved = preservedIds.every((id) => ids.has(id));
@@ -158,7 +153,7 @@ export function pollUntilChatCountGrowsAndPreserves(
     return cy.wait(intervalMs, { log: false }).then(() =>
       pollUntilChatCountGrowsAndPreserves(beforeCount, preservedIds, retries - 1, intervalMs),
     );
-  });
+  }) as Cypress.Chainable<undefined>;
 }
 
 // ---------------------------------------------------------------------------

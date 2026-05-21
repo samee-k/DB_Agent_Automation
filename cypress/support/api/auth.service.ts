@@ -1,28 +1,6 @@
 /// <reference types="cypress" />
 
-interface AuthData {
-  access_token: string;
-  refresh_token: string;
-  userInfo?: Record<string, unknown>;
-}
-
-interface ApiResponse<T> {
-  data: T;
-}
-
-interface LoginResponse {
-  body: ApiResponse<AuthData>;
-  status: number;
-}
-
-interface UsersFixture {
-  validUser: { email: string; password: string };
-}
-
-interface Credentials {
-  email: string;
-  password: string;
-}
+import { UsersFixture, Credentials, LoginResponse } from '../types';
 
 function isPlaceholderCredential(value: string): boolean {
   return value.includes('__SET_VIA_CYPRESS_');
@@ -44,7 +22,7 @@ function resolveValidCredentials(users: UsersFixture): Credentials {
 export function loginBySessionUi() {
   cy.session('login-session', () => {
     cy.visit('/login');
-    cy.fixture('users').then((users: UsersFixture) => {
+    cy.fixture<UsersFixture>('users').then((users) => {
       const credentials = resolveValidCredentials(users);
       cy.get('#email').type(credentials.email);
       cy.get('#password').type(credentials.password);

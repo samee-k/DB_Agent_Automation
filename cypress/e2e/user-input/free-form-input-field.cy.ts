@@ -173,7 +173,7 @@ describe('Free-form Text Input Field Behaviour', () => {
     page.messageInput().realClick().realType(typedText);
 
     cy.wrap(Array.from({ length: typedText.length + 2 })).each(() => {
-      (cy as any).undo();
+      cy.undo();
     });
 
     page.inputValue().then((value) => {

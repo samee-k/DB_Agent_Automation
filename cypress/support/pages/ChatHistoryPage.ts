@@ -1,6 +1,7 @@
 /// <reference types="cypress" />
 
 import { CHAT_INPUT_SELECTOR, SEND_BUTTON_SELECTOR } from '../selectors/CommonSelectors';
+import { ChainableEl } from '../types';
 
 export class ChatHistoryPage {
   // TODO(QA-DATACY): Replace every fallback selector with data-cy once available.
@@ -351,7 +352,7 @@ export class ChatHistoryPage {
     return this.getWelcomeContent();
   }
 
-  getHistoryToggle() {
+  getHistoryToggle(): ChainableEl {
     return cy.get(this.historyToggle).first();
   }
 
@@ -402,7 +403,7 @@ export class ChatHistoryPage {
     return this;
   }
 
-  getHistoryItems() {
+  getHistoryItems(): ChainableEl {
     return cy.get(this.historyItems);
   }
 
@@ -427,7 +428,7 @@ export class ChatHistoryPage {
     });
   }
 
-  getHistoryItemByIndex(index: number) {
+  getHistoryItemByIndex(index: number): ChainableEl {
     return cy.get(this.historyItems).eq(index);
   }
 
@@ -435,15 +436,15 @@ export class ChatHistoryPage {
     return cy.get(this.historyItems).eq(index).invoke('text');
   }
 
-  getHistoryMenuToggleByIndex(index: number) {
+  getHistoryMenuToggleByIndex(index: number): ChainableEl {
     return cy.get(this.historyItems).eq(index).find(this.historyMenuToggle).first();
   }
 
-  getEditAction() {
+  getEditAction(): ChainableEl {
     return cy.get(this.editAction).first();
   }
 
-  getDeleteAction() {
+  getDeleteAction(): ChainableEl {
     return cy.get(this.deleteAction).first();
   }
 
@@ -453,7 +454,7 @@ export class ChatHistoryPage {
     });
   }
 
-  getSelectedItem() {
+  getSelectedItem(): ChainableEl {
     return cy.get(this.selectedHistoryItem).first();
   }
 
@@ -486,35 +487,35 @@ export class ChatHistoryPage {
     });
   }
 
-  getSearchInput() {
+  getSearchInput(): ChainableEl {
     return cy.get(this.searchInput).first();
   }
 
-  getGroupHeaders() {
+  getGroupHeaders(): ChainableEl {
     return cy.get(this.groupHeaders);
   }
 
-  getEditContainer() {
+  getEditContainer(): ChainableEl {
     return cy.get(this.editContainer).first();
   }
 
-  getDeleteContainer() {
+  getDeleteContainer(): ChainableEl {
     return cy.get(this.deleteContainer).first();
   }
 
-  getChatHeaderTitle() {
+  getChatHeaderTitle(): ChainableEl {
     return cy.get(this.chatHeaderTitle).first();
   }
 
-  getLoadingState() {
+  getLoadingState(): ChainableEl {
     return cy.get(this.loadingState).first();
   }
 
-  getConversationContainer() {
+  getConversationContainer(): ChainableEl {
     return cy.get(this.conversationContainer);
   }
 
-  getWelcomeContent() {
+  getWelcomeContent(): ChainableEl {
     // No .first() — allows .should('not.exist') to work when selector matches nothing
     return cy.get(this.welcomeContent);
   }

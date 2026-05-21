@@ -1,9 +1,9 @@
 /// <reference types="cypress" />
 
 import { ChatHistoryPage } from '../../support/pages/ChatHistoryPage';
+import { Chat } from '../../support/types';
 import {
   ALIASES,
-  Chat,
   fetchChatList,
   interceptGetChats,
 } from '../../support/helpers/chat-history.helpers';

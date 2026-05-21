@@ -29,7 +29,7 @@ import * as fs from 'fs';
 
 // ─── Cypress spec-result shape ───────────────────────────────────────────────
 interface CypressTestAttempt {
-  duration: number;
+  duration?: number;
 }
 
 interface CypressTest {
@@ -206,11 +206,12 @@ export async function onBeforeRun(details?: { specs?: Array<{ absolute: string }
 /** Call from `after:spec`. Posts results for the just-finished spec immediately. */
 export async function onAfterSpec(
   spec: { relative: string },
-  results: CypressSpecResult
+  results: CypressCommandLine.RunResult,
 ): Promise<void> {
   if (!isEnabled() || !cfg || runId === null) return;
 
-  const specResults = buildResults(results.tests ?? []);
+  const tests = (results.tests ?? []) as CypressTest[];
+  const specResults = buildResults(tests);
 
   if (specResults.length === 0) {
     console.log(`[TestRail] ${spec.relative} — no C<id> case IDs, skipping.`);

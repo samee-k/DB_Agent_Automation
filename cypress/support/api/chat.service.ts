@@ -1,21 +1,6 @@
 /// <reference types="cypress" />
 
-interface ApiResponse<T> {
-  data: T;
-}
-
-interface Chat {
-  id: string | number;
-  title?: string;
-  createdAt?: string;
-}
-
-interface ChatListResponse {
-  body: ApiResponse<Chat[] | { chats: Chat[] }>;
-  status: number;
-}
-
-const DEFAULT_API_BASE = 'https://qastudio.fuse.ai/api';
+import { Chat, ChatApiBody, ChatApiBodyData, ChatListResponse } from '../types';
 
 function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, '');
@@ -33,18 +18,12 @@ function buildApiBaseCandidates(): string[] {
   const configuredAppUrl = trimTrailingSlash(String(Cypress.env('appUrl') || ''));
   const configuredBaseUrl = trimTrailingSlash(String(Cypress.config('baseUrl') || ''));
 
-  const rawBases = [configuredApiUrl, DEFAULT_API_BASE, configuredAppUrl, configuredBaseUrl]
+  const rawBases = [configuredApiUrl, configuredAppUrl, configuredBaseUrl]
     .filter(Boolean);
 
   const candidates: string[] = [];
   rawBases.forEach((base) => {
     const normalized = trimTrailingSlash(base);
-
-    // Skip localhost — the local dev server typically serves the SPA and does
-    // NOT proxy /api routes.  The real API lives on a remote host.
-    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/.*)?$/i.test(normalized)) {
-      return;
-    }
 
     uniquePush(candidates, normalized);
 
@@ -64,11 +43,11 @@ function requestWithApiFallback(
   accessToken: string,
   body?: unknown,
   throwOnFailure = true,
-): Cypress.Chainable<any> {
+): Cypress.Chainable<Cypress.Response<ChatApiBody>> {
   const bases = buildApiBaseCandidates();
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
 
-  const tryBase = (index: number): Cypress.Chainable<any> => {
+  const tryBase = (index: number): Cypress.Chainable<Cypress.Response<ChatApiBody>> => {
     const base = bases[index];
     const url = `${base}${normalizedPath}`;
 
@@ -86,9 +65,9 @@ function requestWithApiFallback(
       options.body = body as Cypress.RequestBody;
     }
 
-    return cy.request(options).then((res) => {
+    return cy.request(options).then((res: Cypress.Response<ChatApiBody>) => {
       if (res.status >= 200 && res.status < 400) {
-        return res;
+        return cy.wrap(res, { log: false });
       }
 
       if (index < bases.length - 1) {
@@ -96,28 +75,29 @@ function requestWithApiFallback(
       }
 
       if (!throwOnFailure) {
-        return res;
+        return cy.wrap(res, { log: false });
       }
 
       throw new Error(
         `All chat API endpoints failed for ${method} ${normalizedPath}. ` +
         `Tried: ${bases.join(', ')}. Last status: ${res.status}`,
       );
-    });
+    }) as Cypress.Chainable<Cypress.Response<ChatApiBody>>;
   };
 
   return tryBase(0);
 }
 
-function extractChatList(body: ApiResponse<Chat[] | { chats: Chat[] }> | any): Chat[] {
+function extractChatList(body: ChatApiBody | unknown): Chat[] {
   if (!body) return [];
   if (Array.isArray(body)) return body as Chat[];
-  const data = (body as any)?.data;
+  const typed = body as ChatApiBody;
+  const data = typed.data as ChatApiBodyData | Chat[] | undefined;
   if (!data) return [];
   if (Array.isArray(data)) return data as Chat[];
-  if (Array.isArray((data as any)?.chats)) return (data as any).chats as Chat[];
-  if (Array.isArray((data as any)?.data)) return (data as any).data as Chat[];
-  if (Array.isArray((data as any)?.items)) return (data as any).items as Chat[];
+  if (Array.isArray(data.chats)) return data.chats;
+  if (Array.isArray(data.data)) return data.data;
+  if (Array.isArray(data.items)) return data.items;
   return [];
 }
 

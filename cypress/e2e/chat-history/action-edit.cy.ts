@@ -6,12 +6,13 @@ import {
   interceptUpdateTitle,
   seedAndVisit,
 } from '../../support/helpers/chat-history.helpers';
+import { ChatHistoryFixture } from '../../support/types';
 
 describe('Chat History — Action (Edit)', () => {
   const page = new ChatHistoryPage();
 
   // Guard: skip the test body (not fail) if fewer items are available than required.
-  const requireMinItems = (min: number): Cypress.Chainable<any> =>
+  const requireMinItems = (min: number) =>
     page.getHistoryItemCount().then((count: number) => {
       expect(count, `need at least ${min} history items for this test`).to.be.gte(min);
     });
@@ -24,7 +25,7 @@ describe('Chat History — Action (Edit)', () => {
   });
 
   it('C698110 - Verify that the user can edit the chat title.', () => {
-    cy.fixture('chat-history').then((data: any) => {
+    cy.fixture<ChatHistoryFixture>('chat-history').then((data) => {
       const uniqueTitle = `${data.updatedTitle} ${Date.now()}`;
 
       page.openHistoryMenuByIndex(0);
@@ -32,7 +33,7 @@ describe('Chat History — Action (Edit)', () => {
       page.typeEditTitle(uniqueTitle);
       page.clickEditUpdate();
 
-      cy.wait(`@${ALIASES.updateTitle}`).then((interception: any) => {
+      cy.wait(`@${ALIASES.updateTitle}`).then((interception) => {
         expect(interception.response?.statusCode).to.eq(200);
         expect(interception.response?.body?.data?.title).to.eq(uniqueTitle);
       });
@@ -42,13 +43,13 @@ describe('Chat History — Action (Edit)', () => {
   });
 
   it('C698124 - Verify that editing the chat title handles special characters correctly.', () => {
-    cy.fixture('chat-history').then((data: any) => {
+    cy.fixture<ChatHistoryFixture>('chat-history').then((data) => {
       page.openHistoryMenuByIndex(0);
       page.clickEditAction();
       page.typeEditTitle(data.specialCharTitle);
       page.clickEditUpdate();
 
-      cy.wait(`@${ALIASES.updateTitle}`).then((interception: any) => {
+      cy.wait(`@${ALIASES.updateTitle}`).then((interception) => {
         expect(interception.response?.statusCode).to.eq(200);
         expect(interception.response?.body?.data?.title).to.eq(data.specialCharTitle);
       });
@@ -58,7 +59,7 @@ describe('Chat History — Action (Edit)', () => {
   });
 
   it('C698111 - Verify that the 50-character title limit is enforced.', () => {
-    cy.fixture('chat-history').then((data: any) => {
+    cy.fixture<ChatHistoryFixture>('chat-history').then((data) => {
       const overLimitTitle = `${data.maxLengthTitle}EXTRA`;
 
       page.openHistoryMenuByIndex(0);
@@ -66,7 +67,7 @@ describe('Chat History — Action (Edit)', () => {
       page.typeEditTitle(overLimitTitle);
       page.clickEditUpdate();
 
-      cy.wait(`@${ALIASES.updateTitle}`).then((interception: any) => {
+      cy.wait(`@${ALIASES.updateTitle}`).then((interception) => {
         expect(interception.response?.statusCode).to.eq(200);
         expect(String(interception.response?.body?.data?.title || '').length).to.be.at.most(50);
       });
@@ -96,7 +97,7 @@ describe('Chat History — Action (Edit)', () => {
   });
 
   it('C700502 - Verify that the Edit flow supports both confirm and cancel actions.', () => {
-    cy.fixture('chat-history').then((data: any) => {
+    cy.fixture<ChatHistoryFixture>('chat-history').then((data) => {
       page.getHistoryItemTextByIndex(0).then((originalTitle: string) => {
         const normalizedOriginal = originalTitle.trim();
 
@@ -120,7 +121,7 @@ describe('Chat History — Action (Edit)', () => {
   });
 
   it('C698112 - Verify that cancelling Edit discards changes and restores the original title.', () => {
-    cy.fixture('chat-history').then((data: any) => {
+    cy.fixture<ChatHistoryFixture>('chat-history').then((data) => {
       page.getHistoryItemTextByIndex(0).then((originalTitle: string) => {
         const normalizedOriginal = originalTitle.trim();
 
@@ -136,7 +137,7 @@ describe('Chat History — Action (Edit)', () => {
 
   it('C698123 - Verify rapid item selection followed by an edit produces no duplicates.', () => {
     requireMinItems(2).then(() => {
-      cy.fixture('chat-history').then((data: any) => {
+      cy.fixture<ChatHistoryFixture>('chat-history').then((data) => {
         page.getHistoryItems().its('length').then((initialCount: number) => {
           const uniqueTitle = `${data.updatedTitle} ${Date.now()}`;
 
@@ -160,7 +161,7 @@ describe('Chat History — Action (Edit)', () => {
 
   it('C698127 - Verify editing one chat does not overwrite another selected chat.', () => {
     requireMinItems(2).then(() => {
-      cy.fixture('chat-history').then((data: any) => {
+      cy.fixture<ChatHistoryFixture>('chat-history').then((data) => {
         page.getHistoryItemTextByIndex(1).then((secondTitle: string) => {
           const preservedTitle = secondTitle.trim();
           const uniqueTitle = `${data.updatedTitle} ${Date.now()}`;
@@ -182,7 +183,7 @@ describe('Chat History — Action (Edit)', () => {
   });
 
   it('C698141 - Verify editing the active chat title does not reload the conversation.', () => {
-    cy.fixture('chat-history').then((data: any) => {
+    cy.fixture<ChatHistoryFixture>('chat-history').then((data) => {
       const uniqueTitle = `${data.updatedTitle} ${Date.now()}`;
 
       page.selectHistoryItemByIndex(0);
@@ -202,7 +203,7 @@ describe('Chat History — Action (Edit)', () => {
 
   it('C782432 - Verify that an edited chat sorts to the top of the list without page reload.', () => {
     requireMinItems(2).then(() => {
-      cy.fixture('chat-history').then((data: any) => {
+      cy.fixture<ChatHistoryFixture>('chat-history').then((data) => {
         const uniqueTitle = `${data.updatedTitle} MoveTop ${Date.now()}`;
 
         page.getHistoryItems().its('length').then((initialCount: number) => {
@@ -216,7 +217,7 @@ describe('Chat History — Action (Edit)', () => {
             page.typeEditTitle(uniqueTitle);
             page.clickEditUpdate();
 
-            cy.wait(`@${ALIASES.updateTitle}`).then((interception: any) => {
+            cy.wait(`@${ALIASES.updateTitle}`).then((interception) => {
               expect(interception.response?.statusCode).to.eq(200);
               expect(interception.response?.body?.data?.title).to.eq(uniqueTitle);
             });
@@ -247,7 +248,7 @@ describe('Chat History — Action (Edit)', () => {
     page.getEditContainer().should('be.visible');
     page.typeEditTitle(`${keyboardTitle}{enter}`);
 
-    cy.wait(`@${ALIASES.updateTitle}`).then((interception: any) => {
+    cy.wait(`@${ALIASES.updateTitle}`).then((interception) => {
       expect(interception.response?.statusCode).to.eq(200);
       expect(interception.response?.body?.data?.title).to.eq(keyboardTitle);
     });

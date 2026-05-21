@@ -59,9 +59,10 @@ describe('User Prompt Actions - Copy and Edit', () => {
 
       // Assert clipboard.writeText was called with the exact original prompt text.
       cy.get('body').then(($body: JQuery<HTMLElement>) => {
-        cy.get('@clipboardWrite').then((stub: any) => {
-          if (stub && typeof stub.getCall === 'function' && stub.callCount > 0) {
-            const writtenText = stub.getCall(0).args[0] as string;
+        cy.get('@clipboardWrite').then((stub) => {
+          const sinonStub = stub as unknown as sinon.SinonStub;
+          if (sinonStub && typeof sinonStub.getCall === 'function' && sinonStub.callCount > 0) {
+            const writtenText = sinonStub.getCall(0).args[0] as string;
             expect(writtenText.trim()).to.eq(basePrompt);
           } else {
             // Fallback: clipboard API not used — verify confirmation UI instead.

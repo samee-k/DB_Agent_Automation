@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+import { ChainableEl } from '../types';
+
 export class NewChatPage {
   readonly chatPath = Cypress.env('chatPath') ?? '/dbagent/11/chat';
   readonly createChatRoute = /\/api\/chats(?:\?.*)?$/;
@@ -50,7 +52,7 @@ export class NewChatPage {
       .first();
   }
 
-  messageInput(): Cypress.Chainable<JQuery<HTMLElement>> {
+  messageInput(): ChainableEl {
     return cy.get('body', { timeout: 20000 }).then(($body: JQuery<HTMLElement>) => {
       const visibleInputs = $body.find(this.promptInputSelector).filter(':visible');
 

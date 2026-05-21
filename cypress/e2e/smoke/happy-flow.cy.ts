@@ -16,7 +16,7 @@ import { LoginPage } from '../../support/pages/LoginPage';
 import { NewChatPage } from '../../support/pages/NewChatPage';
 import { ChatHistoryPage } from '../../support/pages/ChatHistoryPage';
 import { NavigationPage } from '../../support/pages/NavigationPage';
-import { UsersFixture } from '../../support/types/testData';
+import { UsersFixture } from '../../support/types';
 
 describe('Happy Flow — Smoke', () => {
   const loginPage = new LoginPage();
