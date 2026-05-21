@@ -23,7 +23,7 @@ export default defineConfig({
       USER_EMAIL: process.env.CYPRESS_USER_EMAIL || process.env.USER_EMAIL || '',
       USER_PASSWORD: process.env.CYPRESS_USER_PASSWORD || process.env.USER_PASSWORD || '',
       appUrl: process.env.CYPRESS_APP_URL || process.env.CYPRESS_BASE_URL || 'https://devstudio.fuse.ai',
-      apiUrl: process.env.CYPRESS_API_URL || 'https://datahub.fuse.ai/api',
+      apiUrl: process.env.CYPRESS_API_URL || `${process.env.CYPRESS_BASE_URL || 'https://devstudio.fuse.ai'}/api`,
       projectId: process.env.CYPRESS_PROJECT_ID || '810',
       chatPath: process.env.CYPRESS_CHAT_PATH || '/dbagent/810/chat',
     },
@@ -41,11 +41,11 @@ export default defineConfig({
       });
 
       on('before:run', async (details) => {
-        await onBeforeRun(details as any);
+        await onBeforeRun(details);
       });
 
       on('after:spec', async (spec, results) => {
-        await onAfterSpec(spec, results as any);
+        await onAfterSpec(spec, results);
       });
 
       on('after:run', async () => {
