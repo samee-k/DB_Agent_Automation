@@ -41,8 +41,6 @@ const SELECTORS = {
   ].join(', '),
 };
 
-const EXPECTED_ADMIN_NAV_ITEMS = ['Chat with DB Agent', 'Labs', 'Models', 'LLMs', 'Deployments', 'Users'];
-
 describe('Navigation and Header', () => {
   const navigationPage = new NavigationPage();
   const chatPath = Cypress.env('chatPath') ?? '/dbagent/11/chat';
