@@ -37,12 +37,14 @@ export class LoginPage {
   }
 
   enterEmail(email: string) {
-    cy.get(this.emailInput).clear().type(email);
+    cy.get(this.emailInput).clear();
+    cy.get(this.emailInput).type(email);
     return this;
   }
 
   enterPassword(password: string) {
-    cy.get(this.passwordInput).clear().type(password);
+    cy.get(this.passwordInput).clear();
+    cy.get(this.passwordInput).type(password);
     return this;
   }
 

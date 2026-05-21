@@ -225,7 +225,8 @@ export class ChatHistoryPage {
   }
 
   typeEditTitle(newTitle: string) {
-    cy.get(this.editInput).first().clear().type(newTitle, { delay: 0 });
+    cy.get(this.editInput).first().clear();
+    cy.get(this.editInput).first().type(newTitle, { delay: 0 });
     return this;
   }
 
@@ -248,11 +249,10 @@ export class ChatHistoryPage {
   }
 
   typeInSearch(text: string) {
-    cy.get(this.searchInput).first().clear().then(($input: JQuery<HTMLElement>) => {
-      if (text.length > 0) {
-        cy.wrap($input).type(text, { delay: 0 });
-      }
-    });
+    cy.get(this.searchInput).first().clear();
+    if (text.length > 0) {
+      cy.get(this.searchInput).first().type(text, { delay: 0 });
+    }
     return this;
   }
 
@@ -269,7 +269,8 @@ export class ChatHistoryPage {
   }
 
   setSearchValueWithSpaces(text: string) {
-    cy.get(this.searchInput).first().clear().type(`  ${text}  `, { delay: 0 });
+    cy.get(this.searchInput).first().clear();
+    cy.get(this.searchInput).first().type(`  ${text}  `, { delay: 0 });
     return this;
   }
 
@@ -293,7 +294,10 @@ export class ChatHistoryPage {
     cy.get(this.chatInputSelector)
       .filter(':visible')
       .first()
-      .clear({ force: true })
+      .clear({ force: true });
+    cy.get(this.chatInputSelector)
+      .filter(':visible')
+      .first()
       .type(prompt, { delay: 0, force: true });
     return this;
   }
