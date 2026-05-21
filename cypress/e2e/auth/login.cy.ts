@@ -21,6 +21,9 @@ describe('Login Feature (15/15 test cases)', () => {
       usersFixture = users;
       validEmail = String(Cypress.env('USER_EMAIL') || users.validUser.email || '').trim();
       validPassword = String(Cypress.env('USER_PASSWORD') || users.validUser.password || '').trim();
+
+      expect(validEmail, 'USER_EMAIL must be set via env or fixtures').to.not.equal('');
+      expect(validPassword, 'USER_PASSWORD must be set via env or fixtures').to.not.equal('');
     });
   });
 
@@ -113,8 +116,8 @@ describe('Login Feature (15/15 test cases)', () => {
     it('C715140 - Verify email field rejects invalid formats (e.g., test@, test.com, no @ symbol) and received "Invalid email address" error.', () => {
       cy.wrap(usersFixture.invalidEmailFormats).each((invalidEmail: string, index: number) => {
         if (index > 0) {
-          loginPage.getEmailInput().clear();
-          loginPage.getPasswordInput().clear();
+        loginPage.getEmailInput().clear();
+        loginPage.getPasswordInput().clear();
         }
         submitLogin(invalidEmail, samplePassword);
         loginPage.getLoginButton().should('be.visible');
