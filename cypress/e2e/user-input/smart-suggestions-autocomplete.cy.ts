@@ -33,10 +33,6 @@ describe('Smart Suggestions / Auto-complete', () => {
 
   const knownSuggestionKeywords = ['employee role', 'fraud pattern', 'pie chart', 'bar graph'];
 
-  before(() => {
-    cy.loginBySession();
-  });
-
   beforeEach(() => {
     cy.loginBySession();
     page.openChatPage();
