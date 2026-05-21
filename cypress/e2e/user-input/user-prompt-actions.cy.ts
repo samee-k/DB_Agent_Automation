@@ -59,8 +59,7 @@ describe('User Prompt Actions - Copy and Edit', () => {
 
       // Assert clipboard.writeText was called with the exact original prompt text.
       cy.get('body').then(($body: JQuery<HTMLElement>) => {
-        const stubAlias = cy.get('@clipboardWrite');
-        stubAlias.then((stub: any) => {
+        cy.get('@clipboardWrite').then((stub: any) => {
           if (stub && typeof stub.getCall === 'function' && stub.callCount > 0) {
             const writtenText = stub.getCall(0).args[0] as string;
             expect(writtenText.trim()).to.eq(basePrompt);
