@@ -71,8 +71,8 @@ describe('Chat History — Initial Seed', () => {
       cy.wait(`@${ALIASES.getChats}`).its('response.statusCode').should('eq', 200);
       page.openHistoryPanel();
 
-      // After reload the panel may paginate differently; verify items still exist.
-      page.getHistoryItemCount().should('be.greaterThan', 0);
+      // The panel may paginate differently after reload, but the count must not drop.
+      page.getHistoryItemCount().should('be.gte', countBefore);
     });
   });
 
