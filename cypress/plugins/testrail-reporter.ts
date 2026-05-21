@@ -25,6 +25,8 @@
  *   it('C788001, C788002, C788003 - Verify navbar expand…', …)
  */
 
+import * as fs from 'fs';
+
 // ─── Cypress spec-result shape ───────────────────────────────────────────────
 interface CypressTestAttempt {
   duration: number;
@@ -149,7 +151,7 @@ function collectCaseIdsFromSpecs(specPaths: string[]): number[] {
   const ids = new Set<number>();
   for (const specPath of specPaths) {
     try {
-      const content = require('fs').readFileSync(specPath, 'utf8') as string;
+      const content = fs.readFileSync(specPath, 'utf8') as string;
       const matches = content.match(/\bC(\d+)\b/g) ?? [];
       matches.forEach((m: string) => ids.add(parseInt(m.slice(1), 10)));
     } catch {
