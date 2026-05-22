@@ -6,7 +6,7 @@ describe('Navigation and Header - + New Chat', () => {
   const page = new NewChatPage();
   const firstPrompt = 'List all tables for this database';
 
-  const sendFirstPrompt = (_responseMessage = 'Mocked first response') => {
+  const sendFirstPrompt = () => {
     cy.intercept('POST', page.createChatRoute).as('createChat');
     cy.intercept('POST', page.sendQueryRoute, (req) => { req.continue(); }).as('sendQuery');
 
@@ -27,12 +27,12 @@ describe('Navigation and Header - + New Chat', () => {
 
   it('C716292 - Verify "+ New Chat" becomes clickable after first user prompt.', () => {
     page.assertNewChatIsDisabled();
-    sendFirstPrompt('Mocked first response');
+    sendFirstPrompt();
     page.assertNewChatIsEnabled();
   });
 
   it('C716293 - Verify clicking "+ New Chat" clears the current conversation and returns to Welcome Screen.', () => {
-    sendFirstPrompt('Mocked response to clear');
+    sendFirstPrompt();
 
     page.assertNewChatIsEnabled();
     page.clickNewChat();
@@ -70,7 +70,7 @@ describe('Navigation and Header - + New Chat', () => {
   });
 
   it('C716295 - Verify that the existing title after first prompt resets to "Untitled Chat" upon clicking "+ New Chat".', () => {
-    sendFirstPrompt('Mocked response for title reset test');
+    sendFirstPrompt();
 
     page.assertNewChatIsEnabled();
     page.clickNewChat();
