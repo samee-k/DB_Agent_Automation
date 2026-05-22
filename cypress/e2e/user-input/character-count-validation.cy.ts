@@ -41,11 +41,6 @@ describe('Character Count and Input Validation Limit', () => {
     getSendButton().should('not.be.disabled').and('not.have.attr', 'disabled');
   };
 
-  // Setup once for suite since login is cached
-  before(() => {
-    // Removed login here, moved to beforeEach with session
-  });
-
   // Setup per test for isolation
   beforeEach(() => {
     cy.loginBySession();
