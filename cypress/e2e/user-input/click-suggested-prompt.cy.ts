@@ -37,10 +37,6 @@ describe('Click on Suggested Prompt', () => {
     page.messageInput().type('{backspace}');
   };
 
-  before(() => {
-    cy.loginBySession();
-  });
-
   beforeEach(() => {
     cy.loginBySession();
     page.openChatPage();
