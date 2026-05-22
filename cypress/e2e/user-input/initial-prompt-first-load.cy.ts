@@ -19,9 +19,6 @@ describe('Initial Prompt Options on First Load', () => {
 
   beforeEach(() => {
     cy.loginBySession();
-  });
-
-  beforeEach(() => {
     page.openChatPage();
     page.welcomeTitle().should('be.visible');
   });
