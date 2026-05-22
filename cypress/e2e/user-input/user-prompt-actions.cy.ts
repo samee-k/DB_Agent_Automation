@@ -7,7 +7,7 @@ describe('User Prompt Actions - Copy and Edit', () => {
   const basePrompt = 'Show all users from the database';
 
   beforeEach(() => {
-    page.loginOnceForSuite();
+    cy.loginBySession();
     page.openChatPage().waitForWelcomeScreen();
     page.sendPromptAndEnsureUserMessage(basePrompt);
   });
