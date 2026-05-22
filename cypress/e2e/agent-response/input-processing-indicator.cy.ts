@@ -179,9 +179,12 @@ describe('Input Processing Indicator', () => {
     waitFor('sessionSpecificSend');
   });
 
-  it.skip('T873883 - Verify loading state is isolated across two real browser tabs.', () => {
-    // True multi-tab isolation cannot be automated within a single Cypress run.
-    // Use Playwright or manual testing for this scenario.
+  // Cypress runs all tests in a single browser tab and cannot create
+  // independent tab contexts. Multi-tab isolation requires a tool that
+  // supports parallel browser contexts (e.g. Playwright `browser.newContext()`).
+  it.skip('C782433 - Verify loading state is isolated across two real browser tabs.', () => {
+    // NOT automatable in Cypress — requires true multi-tab support.
+    // Covered by manual QA test plan.
   });
 
   it('C700498 - Verify loading indicator does not reappear after response is rendered.', () => {
