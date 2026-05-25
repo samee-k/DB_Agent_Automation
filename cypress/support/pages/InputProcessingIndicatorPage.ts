@@ -2,6 +2,7 @@
 
 import { ChainableEl } from '../types';
 import { CHAT_INPUT_SELECTOR, SEND_BUTTON_SELECTOR } from '../selectors/CommonSelectors';
+import { readComposerValue, typeIntoComposer } from '../helpers/composer';
 
 export class InputProcessingIndicatorPage {
   readonly chatPath = Cypress.env('chatPath') ?? '/dbagent/11/chat';
@@ -79,26 +80,13 @@ export class InputProcessingIndicatorPage {
   }
 
   readInputValue(): Cypress.Chainable<string> {
-    return this.messageInput().then(($input: JQuery<HTMLElement>) => {
-      const el = $input[0] as HTMLElement;
-      const isContentEditable = el.getAttribute('contenteditable') === 'true' || el.isContentEditable;
-      if (isContentEditable) return ($input.text() || '').trim();
-      const raw = $input.val();
-      if (Array.isArray(raw)) return raw.join(' ').trim();
-      return String(raw ?? '').trim();
-    });
+    return this.messageInput().then(($input: JQuery<HTMLElement>) => readComposerValue($input).trim());
   }
 
   // ── User actions ──────────────────────────────────────────────────────────
 
   typePrompt(text: string) {
-    this.messageInput().then(($input: JQuery<HTMLElement>) => {
-      const el = $input[0] as HTMLElement;
-      const isContentEditable = el.getAttribute('contenteditable') === 'true' || el.isContentEditable;
-      cy.wrap($input).click();
-      if (!isContentEditable) cy.wrap($input).clear();
-      cy.wrap($input).type(text, { delay: 0 });
-    });
+    this.messageInput().then(($input: JQuery<HTMLElement>) => typeIntoComposer($input, text));
     return this;
   }
 

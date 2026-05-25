@@ -2,6 +2,7 @@
 
 import { ChainableEl } from '../types';
 import { CHAT_INPUT_SELECTOR } from '../selectors/CommonSelectors';
+import { readComposerValue, typeIntoComposer } from '../helpers/composer';
 
 export class NewChatPage {
   readonly chatPath = Cypress.env('chatPath') ?? '/dbagent/11/chat';
@@ -56,17 +57,7 @@ export class NewChatPage {
   }
 
   typePrompt(promptText: string) {
-    this.messageInput().then(($input: JQuery<HTMLElement>) => {
-      const inputElement = $input[0] as HTMLElement;
-      const isContentEditable = inputElement.getAttribute('contenteditable') === 'true' || inputElement.isContentEditable;
-
-      cy.wrap($input).click();
-      if (!isContentEditable) {
-        cy.wrap($input).clear();
-      }
-      cy.wrap($input).type(promptText, { delay: 0 });
-    });
-
+    this.messageInput().then(($input: JQuery<HTMLElement>) => typeIntoComposer($input, promptText));
     return this;
   }
 
@@ -116,18 +107,8 @@ export class NewChatPage {
 
   assertInputCleared() {
     this.messageInput().then(($input: JQuery<HTMLElement>) => {
-      const inputElement = $input[0] as HTMLElement;
-      const isContentEditable = inputElement.getAttribute('contenteditable') === 'true' || inputElement.isContentEditable;
-
-      if (isContentEditable) {
-        expect(($input.text() || '').trim()).to.eq('');
-      } else {
-        const value = $input.val();
-        const normalized = Array.isArray(value) ? value.join(' ') : String(value ?? '');
-        expect(normalized.trim()).to.eq('');
-      }
+      expect(readComposerValue($input).trim()).to.eq('');
     });
-
     return this;
   }
 

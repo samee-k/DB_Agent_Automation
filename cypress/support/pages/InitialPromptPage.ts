@@ -2,6 +2,7 @@
 
 import { ChainableEl } from '../types';
 import { CHAT_INPUT_SELECTOR, SEND_BUTTON_SELECTOR } from '../selectors/CommonSelectors';
+import { appendIntoComposer, clearComposer, readComposerValue, typeIntoComposer } from '../helpers/composer';
 
 export class InitialPromptPage {
   readonly chatPath = Cypress.env('chatPath') || `/dbagent/${Cypress.env('projectId') || '11'}/chat`;
@@ -79,67 +80,23 @@ export class InitialPromptPage {
     return cy.contains(new RegExp(title, 'i'));
   }
 
-  private isContentEditableInput($input: JQuery<HTMLElement>): boolean {
-    const element = $input[0] as HTMLElement;
-    return element.getAttribute('contenteditable') === 'true' || element.isContentEditable;
-  }
-
-  private focusInput($input: JQuery<HTMLElement>) {
-    cy.wrap($input).click();
-  }
-
   typePrompt(promptText: string) {
-    this.messageInput().then(($input: JQuery<HTMLElement>) => {
-      const isContentEditable = this.isContentEditableInput($input);
-
-      this.focusInput($input);
-      if (!isContentEditable) {
-        cy.wrap($input).clear();
-      }
-      cy.wrap($input).type(promptText, { delay: 0 });
-    });
+    this.messageInput().then(($input: JQuery<HTMLElement>) => typeIntoComposer($input, promptText));
     return this;
   }
 
   appendPrompt(promptText: string) {
-    this.messageInput().then(($input: JQuery<HTMLElement>) => {
-      this.focusInput($input);
-      cy.wrap($input).type(promptText, { delay: 0 });
-    });
+    this.messageInput().then(($input: JQuery<HTMLElement>) => appendIntoComposer($input, promptText));
     return this;
   }
 
   clearPrompt() {
-    this.messageInput().then(($input: JQuery<HTMLElement>) => {
-      const isContentEditable = this.isContentEditableInput($input);
-
-      if (isContentEditable) {
-        this.focusInput($input);
-        cy.wrap($input).type('{selectall}{backspace}');
-      } else {
-        this.focusInput($input);
-        cy.wrap($input).clear();
-      }
-    });
+    this.messageInput().then(($input: JQuery<HTMLElement>) => clearComposer($input));
     return this;
   }
 
   inputValue(): Cypress.Chainable<string> {
-    return this.messageInput().then(($input: JQuery<HTMLElement>): string => {
-      const isContentEditable = this.isContentEditableInput($input);
-
-      if (isContentEditable) {
-        return $input.text() ?? '';
-      }
-
-      const value = $input.val();
-
-      if (Array.isArray(value)) {
-        return value.join(' ');
-      }
-
-      return value == null ? '' : String(value);
-    });
+    return this.messageInput().then(($input: JQuery<HTMLElement>): string => readComposerValue($input));
   }
 
   inputHtml(): Cypress.Chainable<string> {
