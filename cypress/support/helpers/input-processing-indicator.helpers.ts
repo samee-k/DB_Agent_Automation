@@ -73,7 +73,7 @@ export const assertIndicatorVisible = (
 
 export const assertIndicatorNotVisible = (page: InputProcessingIndicatorPage): void => {
   cy.get('body', { timeout: 15000 }).should(($body: JQuery<HTMLElement>) => {
-    const hasText = $body
+    const processingStateVisible = $body
       .find('*')
       .filter(':visible')
       .toArray()
@@ -89,10 +89,12 @@ export const assertIndicatorNotVisible = (page: InputProcessingIndicatorPage): v
       $send.length > 0 &&
       ($send.is(':disabled') ||
         String($send.attr('aria-disabled') || '').toLowerCase() === 'true');
-    expect(
-      hasText && (inputDisabled || sendDisabled),
-      'processing indicator should not be actively blocking',
-    ).to.eq(false);
+
+    // "Actively blocking" = processing state visible AND a control is locked.
+    // We assert the indicator is NOT blocking — either the processing text is
+    // gone, or the controls are usable again.
+    const isActivelyBlocking = processingStateVisible && (inputDisabled || sendDisabled);
+    expect(isActivelyBlocking, 'processing indicator should not be actively blocking').to.eq(false);
   });
 };
 
