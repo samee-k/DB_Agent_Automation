@@ -2,6 +2,7 @@
 
 import { InitialPromptPage } from '../../support/pages/InitialPromptPage';
 import { SuggestionHelper, SUGGESTION_CONTAINER_SELECTOR, SUGGESTION_ITEM_SELECTOR } from '../../support/helpers/SuggestionHelper';
+import { stubChatSendQuerySuccess } from '../../support/helpers/llm-stubs';
 
 describe('Smart Suggestions / Auto-complete', () => {
   const page = new InitialPromptPage();
@@ -20,11 +21,7 @@ describe('Smart Suggestions / Auto-complete', () => {
   };
 
   const stubChatRequest = () => {
-    cy.intercept('POST', '**/chat**', (req) => {
-      req.continue((res) => {
-        res.setDelay(300);
-      });
-    }).as('chatRequest');
+    stubChatSendQuerySuccess({ delay: 300 });
   };
 
   const MAX_VISIBLE_SUGGESTIONS = 10;
