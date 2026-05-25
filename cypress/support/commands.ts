@@ -7,6 +7,7 @@ import {
   seedChatsByProjectViaApiIfEmptyService,
 } from './api/chat.service';
 import { CHAT_INPUT_SELECTOR, SEND_BUTTON_SELECTOR } from './selectors/CommonSelectors';
+import { typeIntoComposer } from './helpers/composer';
 
 export function loginBySession() {
 	loginBySessionUi();
@@ -85,12 +86,7 @@ Cypress.Commands.add('sendPrompt', (promptText: string, options?: SendPromptOpti
 	const waitFor = options?.waitFor;
 
 	cy.get(CHAT_INPUT_SELECTOR, { timeout: 20000 }).filter(':visible').first().then(($input: JQuery<HTMLElement>) => {
-		const inputEl = $input[0] as HTMLElement;
-		const isContentEditable = inputEl.getAttribute('contenteditable') === 'true' || inputEl.isContentEditable;
-
-		cy.wrap($input).click();
-		if (!isContentEditable) cy.wrap($input).clear();
-		cy.wrap($input).type(promptText, { delay: 0 });
+		typeIntoComposer($input, promptText);
 
 		cy.get(SEND_BUTTON_SELECTOR).filter(':visible').then(($btn) => {
 			if ($btn.length) {
