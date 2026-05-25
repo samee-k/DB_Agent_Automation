@@ -118,7 +118,7 @@ describe('Chat History — Action (Delete)', () => {
     page.confirmDelete();
     cy.wait(`@${ALIASES.deleteChat}`).its('response.statusCode').should('eq', 200);
 
-    page.getPanel().should('be.visible');
+    page.openHistoryPanel();
     page.getEmptyState()
       .should('be.visible')
       .and('contain.text', 'No Conversation History');
