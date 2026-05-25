@@ -12,7 +12,7 @@ export function loginBySession() {
 }
 
 export function clearChatsByProjectViaApi() {
-	clearChatsByProjectViaApiService();
+	return clearChatsByProjectViaApiService();
 }
 
 export function seedChatsByProjectViaApiIfEmpty(targetCount = 5, upperLimit = 20) {
@@ -23,33 +23,29 @@ export function ensureChatsByProjectMinCount(minCount = 10, upperLimit = 50) {
 	ensureChatsByProjectMinCountService(minCount, upperLimit);
 }
 
-// @types/cypress@0.1.x does not include the modern Commands.add overloads;
-// cast command names to satisfy the older type signature while keeping implementations typed.
-type CommandName = keyof Cypress.Chainable<void>;
-
-Cypress.Commands.add('loginBySession' as CommandName, () => {
+Cypress.Commands.add('loginBySession', () => {
 	loginBySession();
 });
 
-Cypress.Commands.add('clearChatsByProjectViaApi' as CommandName, () => {
-	clearChatsByProjectViaApi();
+Cypress.Commands.add('clearChatsByProjectViaApi', () => {
+	return clearChatsByProjectViaApi();
 });
 
-Cypress.Commands.add('seedChatsByProjectViaApiIfEmpty' as CommandName, ((targetCount?: number, upperLimit?: number) => {
+Cypress.Commands.add('seedChatsByProjectViaApiIfEmpty', (targetCount?: number, upperLimit?: number) => {
 	seedChatsByProjectViaApiIfEmpty(targetCount ?? 5, upperLimit ?? 20);
-}) as Cypress.CommandFn<CommandName>);
+});
 
-Cypress.Commands.add('ensureChatsByProjectMinCount' as CommandName, ((minCount?: number, upperLimit?: number) => {
+Cypress.Commands.add('ensureChatsByProjectMinCount', (minCount?: number, upperLimit?: number) => {
 	ensureChatsByProjectMinCount(minCount ?? 10, upperLimit ?? 50);
-}) as Cypress.CommandFn<CommandName>);
+});
 
-Cypress.Commands.add('clearSessionStorage' as CommandName, () => {
+Cypress.Commands.add('clearSessionStorage', () => {
 	cy.window().then((windowObject: Window) => {
 		windowObject.sessionStorage.clear();
 	});
 });
 
-Cypress.Commands.add('undo' as CommandName, () => {
+Cypress.Commands.add('undo', () => {
 	const isMac = Cypress.platform === 'darwin';
 	const undoKey = isMac ? 'Meta' : 'Control';
 
@@ -60,7 +56,7 @@ Cypress.Commands.add('undo' as CommandName, () => {
 	cy.realPress([undoKey, 'z']);
 });
 
-Cypress.Commands.add('undoJS' as CommandName, ((selector: string) => {
+Cypress.Commands.add('undoJS', (selector: string) => {
 	cy.get(selector).then(($element: JQuery<HTMLElement>) => {
 		const target = $element[0] as HTMLElement;
 		target.focus();
@@ -69,7 +65,7 @@ Cypress.Commands.add('undoJS' as CommandName, ((selector: string) => {
 			documentObject.execCommand('undo', false, '');
 		});
 	});
-}) as Cypress.CommandFn<CommandName>);
+});
 
 Cypress.Commands.add('getAccessToken', () => {
   return cy.window().then((win) => {
