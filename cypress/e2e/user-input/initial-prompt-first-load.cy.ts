@@ -182,7 +182,7 @@ describe('Initial Prompt Options on First Load', () => {
     const titleRects: Array<DOMRect> = [];
 
     FEATURE_CARDS.forEach((card) => {
-      page.featureCardByTitle(card.title).should('be.visible').then(($title) => {
+      page.featureCardByTitle(card.title).should('be.visible').then(($title: JQuery<HTMLElement> | undefined) => {
         expect($title, `title element for card: ${card.title}`).to.not.eq(undefined);
         const titleNode = ($title?.[0] as HTMLElement | undefined);
         expect(titleNode, `title node for card: ${card.title}`).to.exist;
