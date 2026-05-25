@@ -30,10 +30,10 @@ export default defineConfig({
     env: {
       USER_EMAIL: process.env.CYPRESS_USER_EMAIL || process.env.USER_EMAIL || '',
       USER_PASSWORD: process.env.CYPRESS_USER_PASSWORD || process.env.USER_PASSWORD || '',
-      appUrl: process.env.CYPRESS_APP_URL || process.env.CYPRESS_BASE_URL || 'https://devstudio.fuse.ai',
       apiUrl: process.env.CYPRESS_API_URL || `${process.env.CYPRESS_BASE_URL || 'https://devstudio.fuse.ai'}/api`,
-      projectId: process.env.CYPRESS_PROJECT_ID || '810',
-      chatPath: process.env.CYPRESS_CHAT_PATH || '/dbagent/810/chat',
+      // Defaults match .env.example. Override via CYPRESS_PROJECT_ID / CYPRESS_CHAT_PATH.
+      projectId: process.env.CYPRESS_PROJECT_ID || '11',
+      chatPath: process.env.CYPRESS_CHAT_PATH || '/dbagent/11/chat',
     },
     setupNodeEvents(on, config) {
       // Ensure video subdirectories exist before specs run (prevents ffmpeg errors)
