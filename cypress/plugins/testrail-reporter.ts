@@ -110,7 +110,7 @@ function extractCaseIds(title: string): number[] {
   return (title.match(/\bC(\d+)\b/g) ?? []).map((m) => parseInt(m.slice(1), 10));
 }
 
-function formatScreenshotComment(screenshots: CypressCommandLine.RunResult['screenshots']): string {
+function formatScreenshotComment(screenshots?: Array<{ path?: string }>): string {
   const paths = Array.from(new Set((screenshots ?? []).map((screenshot) => screenshot.path).filter(Boolean)));
 
   if (paths.length === 0) {
@@ -136,7 +136,7 @@ async function apiRequest<T>(method: 'GET' | 'POST', endpoint: string, body?: ob
   return response.json() as Promise<T>;
 }
 
-function buildResults(tests: CypressTest[], screenshots: CypressCommandLine.RunResult['screenshots']): TestRailResult[] {
+function buildResults(tests: CypressTest[], screenshots?: Array<{ path?: string }>): TestRailResult[] {
   const results: TestRailResult[] = [];
   const screenshotComment = formatScreenshotComment(screenshots);
 
@@ -223,7 +223,7 @@ export async function onAfterSpec(
   if (!isEnabled() || !cfg || runId === null) return;
 
   const tests = (results.tests ?? []) as CypressTest[];
-  const specResults = buildResults(tests, results.screenshots ?? []);
+  const specResults = buildResults(tests);
 
   if (specResults.length === 0) {
     console.log(`[TestRail] ${spec.relative} — no C<id> case IDs, skipping.`);
