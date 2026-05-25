@@ -41,9 +41,12 @@ describe('Free-form Text Input Field Behaviour', () => {
   let chatRequestCount = 0;
   const stubChatRequest = () => {
     chatRequestCount = 0;
+    // Synthetic 200 — most tests in this file only check input-side behavior
+    // (cleared input, char count, request count). Decoupling from the real LLM
+    // means the suite stays green when the deployment is slow or down.
     cy.intercept('POST', '**/api/chats/*/send-query', (req) => {
       chatRequestCount++;
-      req.continue();
+      req.reply({ statusCode: 200, body: { data: { id: 'stub', response: 'stubbed' } } });
     }).as('chatRequest');
     // Also intercept chat creation so first-prompt tests still pass
     cy.intercept('POST', /\/api\/chats(?:\?.*)?$/).as('chatCreate');
