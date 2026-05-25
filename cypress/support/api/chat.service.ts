@@ -49,16 +49,27 @@ function apiRequest(
   return cy.request(options) as Cypress.Chainable<Cypress.Response<ChatApiBody>>;
 }
 
-function extractChatList(body: ChatApiBody | unknown): Chat[] {
+/**
+ * Normalise the many shapes the chat-list endpoint can return.
+ * Used by both this service and chat-history.helpers — kept as a single
+ * source of truth so the two callers can't drift on which body paths they
+ * accept.
+ */
+export function extractChatList(body: ChatApiBody | unknown): Chat[] {
   if (!body) return [];
   if (Array.isArray(body)) return body as Chat[];
   const typed = body as ChatApiBody;
   const data = typed.data as ChatApiBodyData | Chat[] | undefined;
-  if (!data) return [];
-  if (Array.isArray(data)) return data as Chat[];
-  if (Array.isArray(data.chats)) return data.chats;
-  if (Array.isArray(data.data)) return data.data;
-  if (Array.isArray(data.items)) return data.items;
+  if (data) {
+    if (Array.isArray(data)) return data as Chat[];
+    if (Array.isArray(data.chats)) return data.chats;
+    if (Array.isArray(data.data)) return data.data;
+    if (Array.isArray(data.items)) return data.items;
+    if (Array.isArray(data.records)) return data.records;
+  }
+  if (Array.isArray(typed.chats)) return typed.chats;
+  if (Array.isArray(typed.items)) return typed.items;
+  if (Array.isArray(typed.records)) return typed.records;
   return [];
 }
 

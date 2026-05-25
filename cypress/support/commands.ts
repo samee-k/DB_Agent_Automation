@@ -8,6 +8,8 @@ import {
 } from './api/chat.service';
 import { CHAT_INPUT_SELECTOR, SEND_BUTTON_SELECTOR } from './selectors/CommonSelectors';
 import { typeIntoComposer } from './helpers/composer';
+import { TIMEOUTS } from './constants';
+import type { SendPromptOptions } from './commands.d';
 
 export function loginBySession() {
 	loginBySessionUi();
@@ -30,7 +32,7 @@ Cypress.Commands.add('loginBySession', () => {
 });
 
 Cypress.Commands.add('clearChatsByProjectViaApi', () => {
-	return clearChatsByProjectViaApi();
+	clearChatsByProjectViaApi();
 });
 
 Cypress.Commands.add('seedChatsByProjectViaApiIfEmpty', (targetCount?: number, upperLimit?: number) => {
@@ -77,15 +79,14 @@ Cypress.Commands.add('getAccessToken', () => {
   });
 });
 
-type SendPromptOptions = { timeout?: number; waitFor?: string | string[] };
-
 // Centralized send prompt command: types prompt and triggers send (click or Enter).
 // Pass `waitFor` to wait on one or more `cy.intercept` aliases set up by the caller.
 Cypress.Commands.add('sendPrompt', (promptText: string, options?: SendPromptOptions) => {
-	const timeout = options?.timeout ?? 120000;
+	const timeout = options?.timeout ?? TIMEOUTS.llmResponse;
 	const waitFor = options?.waitFor;
+	const aliases = !waitFor ? [] : Array.isArray(waitFor) ? waitFor : [waitFor];
 
-	cy.get(CHAT_INPUT_SELECTOR, { timeout: 20000 }).filter(':visible').first().then(($input: JQuery<HTMLElement>) => {
+	cy.get(CHAT_INPUT_SELECTOR, { timeout: TIMEOUTS.ui }).filter(':visible').first().then(($input: JQuery<HTMLElement>) => {
 		typeIntoComposer($input, promptText);
 
 		cy.get(SEND_BUTTON_SELECTOR).filter(':visible').then(($btn) => {
@@ -95,13 +96,14 @@ Cypress.Commands.add('sendPrompt', (promptText: string, options?: SendPromptOpti
 				cy.wrap($input).type('{enter}');
 			}
 		});
-	}).then(() => {
-		if (!waitFor) return;
-		const aliases = Array.isArray(waitFor) ? waitFor : [waitFor];
-		aliases.forEach((alias) => {
-			const tag = alias.startsWith('@') ? alias : `@${alias}`;
-			cy.wait(tag, { timeout });
-		});
+	});
+
+	// Queue waits at command-body level so they run sequentially after the
+	// typing chain above. Cypress's command queue handles ordering without
+	// wrapping in a redundant .then() that swallows the chain's subject.
+	aliases.forEach((alias) => {
+		const tag = alias.startsWith('@') ? alias : `@${alias}`;
+		cy.wait(tag, { timeout });
 	});
 });
 

@@ -1,7 +1,8 @@
 /// <reference types="cypress" />
 
 import { ChatHistoryPage } from '../pages/ChatHistoryPage';
-import { Chat } from '../types';
+import { extractChatList } from '../api/chat.service';
+import { Chat, ChatApiBody } from '../types';
 
 // ---------------------------------------------------------------------------
 // Intercept alias names — single source of truth across all chat-history specs.
@@ -114,7 +115,7 @@ export function fetchChatList(): Cypress.Chainable<Chat[]> {
 
   return cy.window().then((win: Window) => {
     const accessToken = win.localStorage.getItem('access_token') || '';
-    expect(accessToken, 'access_token must be present for API call').to.be.a('string').and.not.be.empty;
+    expect(accessToken, 'access_token must be present for API call').to.be.a('string').and('not.be.empty');
 
     return cy.request({
       method: 'GET',
@@ -122,20 +123,8 @@ export function fetchChatList(): Cypress.Chainable<Chat[]> {
       headers: { Authorization: `Bearer ${accessToken}` },
       failOnStatusCode: false,
     }).then((res) => {
-      if (res.status < 200 || res.status >= 400) {
-        return [] as Chat[];
-      }
-      const body = res.body;
-      if (Array.isArray(body)) return body as Chat[];
-      if (Array.isArray(body?.data?.data)) return body.data.data as Chat[];
-      if (Array.isArray(body?.data?.chats)) return body.data.chats as Chat[];
-      if (Array.isArray(body?.data?.items)) return body.data.items as Chat[];
-      if (Array.isArray(body?.data?.records)) return body.data.records as Chat[];
-      if (Array.isArray(body?.data)) return body.data as Chat[];
-      if (Array.isArray(body?.chats)) return body.chats as Chat[];
-      if (Array.isArray(body?.items)) return body.items as Chat[];
-      if (Array.isArray(body?.records)) return body.records as Chat[];
-      return [] as Chat[];
+      if (res.status < 200 || res.status >= 400) return [] as Chat[];
+      return extractChatList(res.body as ChatApiBody);
     });
   });
 }
