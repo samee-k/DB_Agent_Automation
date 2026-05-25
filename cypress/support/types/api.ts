@@ -37,17 +37,13 @@ export interface ApiResponse<T> {
   data: T;
 }
 
-export interface LoginResponse {
-  body: ApiResponse<AuthData>;
-  status: number;
-}
+/** Alias for the cy.request response containing login data. */
+export type LoginResponse = Cypress.Response<ApiResponse<AuthData>>;
 
 export interface Credentials {
   email: string;
   password: string;
 }
 
-export interface ChatListResponse {
-  body: ChatApiBody;
-  status: number;
-}
+/** Alias for the cy.request response containing the chat list. */
+export type ChatListResponse = Cypress.Response<ChatApiBody>;
