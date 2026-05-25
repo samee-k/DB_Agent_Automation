@@ -16,6 +16,8 @@ import { LoginPage } from '../../support/pages/LoginPage';
 import { NewChatPage } from '../../support/pages/NewChatPage';
 import { ChatHistoryPage } from '../../support/pages/ChatHistoryPage';
 import { NavigationPage } from '../../support/pages/NavigationPage';
+import { probeAndCacheLlmHealth } from '../../support/helpers/deployment-health';
+import { TIMEOUTS } from '../../support/constants';
 import { PromptsFixture, UsersFixture } from '../../support/types';
 
 describe('Happy Flow — Smoke', () => {
@@ -26,11 +28,24 @@ describe('Happy Flow — Smoke', () => {
 
   let smokePrompt = 'Hi';
 
-  beforeEach(() => {
+  // One-time deployment-health probe so SMOKE-03/04/05 fail fast (skipped) when
+  // the LLM is down, instead of burning 120s each in `cy.wait('@sendQuery')`.
+  before(() => {
+    probeAndCacheLlmHealth();
+  });
+
+  beforeEach(function () {
     cy.fixture<PromptsFixture>('prompts').then((data) => {
       smokePrompt = data.shortPrompt;
     });
   });
+
+  // Tests that send a prompt and wait for the agent response must skip when
+  // the deployment is unhealthy. Login/welcome/logout tests (01, 02, 06) still
+  // run because they don't depend on a working agent.
+  const requiresLlm = function (this: Mocha.Context) {
+    if (Cypress.env('llmHealthy') === false) this.skip();
+  };
 
   // ── Step 1: Login ─────────────────────────────────────────────────────────
   // Credentials are resolved inside the test so SMOKE-01 has no external setup dependency.
@@ -50,7 +65,7 @@ describe('Happy Flow — Smoke', () => {
       loginPage.clickLoginButton();
 
       cy.url().should('not.include', '/login');
-      cy.contains(/Studio Projects|DB Agent|Welcome/i, { timeout: 20000 }).should('be.visible');
+      cy.contains(/Studio Projects|DB Agent|Welcome/i, { timeout: TIMEOUTS.ui }).should('be.visible');
     });
   });
 
@@ -65,7 +80,8 @@ describe('Happy Flow — Smoke', () => {
   });
 
   // ── Step 3: Send a prompt and receive a response ──────────────────────────
-  it('SMOKE-03 — User can send a prompt and the agent responds', () => {
+  it('SMOKE-03 — User can send a prompt and the agent responds', function () {
+    requiresLlm.call(this);
     cy.loginBySession();
     chatPage.openChatPage().waitForWelcomeScreen();
 
@@ -74,8 +90,8 @@ describe('Happy Flow — Smoke', () => {
 
     chatPage.typePrompt(smokePrompt).submitPromptWithEnter();
 
-    cy.wait('@createChat', { timeout: 15000 }).its('response.statusCode').should('be.oneOf', [200, 201]);
-    cy.wait('@sendQuery', { timeout: 120000 });
+    cy.wait('@createChat', { timeout: TIMEOUTS.ui }).its('response.statusCode').should('be.oneOf', [200, 201]);
+    cy.wait('@sendQuery', { timeout: TIMEOUTS.llmResponse });
 
     // Input should be cleared and New Chat should now be enabled
     chatPage.assertNewChatIsEnabled();
@@ -83,7 +99,8 @@ describe('Happy Flow — Smoke', () => {
   });
 
   // ── Step 4: Chat appears in history ──────────────────────────────────────
-  it('SMOKE-04 — Sent prompt creates a chat entry in history', () => {
+  it('SMOKE-04 — Sent prompt creates a chat entry in history', function () {
+    requiresLlm.call(this);
     cy.loginBySession();
     chatPage.openChatPage().waitForWelcomeScreen();
 
@@ -91,15 +108,16 @@ describe('Happy Flow — Smoke', () => {
     cy.intercept('POST', chatPage.sendQueryRoute).as('sendQuery');
 
     chatPage.typePrompt(smokePrompt).submitPromptWithEnter();
-    cy.wait('@createChat', { timeout: 15000 });
-    cy.wait('@sendQuery', { timeout: 120000 });
+    cy.wait('@createChat', { timeout: TIMEOUTS.ui });
+    cy.wait('@sendQuery', { timeout: TIMEOUTS.llmResponse });
 
     historyPage.openHistoryPanel();
     historyPage.getHistoryItemCount().should('be.gte', 1);
   });
 
   // ── Step 5: New Chat resets the session ───────────────────────────────────
-  it('SMOKE-05 — Clicking "+ New Chat" resets the conversation', () => {
+  it('SMOKE-05 — Clicking "+ New Chat" resets the conversation', function () {
+    requiresLlm.call(this);
     cy.loginBySession();
     chatPage.openChatPage().waitForWelcomeScreen();
 
@@ -107,8 +125,8 @@ describe('Happy Flow — Smoke', () => {
     cy.intercept('POST', chatPage.sendQueryRoute).as('sendQuery');
 
     chatPage.typePrompt(smokePrompt).submitPromptWithEnter();
-    cy.wait('@createChat', { timeout: 15000 });
-    cy.wait('@sendQuery', { timeout: 120000 });
+    cy.wait('@createChat', { timeout: TIMEOUTS.ui });
+    cy.wait('@sendQuery', { timeout: TIMEOUTS.llmResponse });
 
     chatPage.assertNewChatIsEnabled();
     chatPage.clickNewChat();
@@ -125,7 +143,7 @@ describe('Happy Flow — Smoke', () => {
 
     navPage.clickLogout();
 
-    cy.url({ timeout: 15000 }).should('include', '/login');
+    cy.url({ timeout: TIMEOUTS.ui }).should('include', '/login');
     loginPage.getEmailInput().should('be.visible');
   });
 });

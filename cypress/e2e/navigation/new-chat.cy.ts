@@ -1,11 +1,17 @@
 /// <reference types="cypress" />
 
 import { NewChatPage } from '../../support/pages/NewChatPage';
+import { requireLlmHealthy } from '../../support/helpers/deployment-health';
+import { TIMEOUTS } from '../../support/constants';
 import { PROMPTS } from '../../support/prompts';
 
 describe('Navigation and Header - + New Chat', () => {
   const page = new NewChatPage();
   const firstPrompt = PROMPTS.shortPrompt;
+
+  // Every test here sends a prompt and waits for `@sendQuery`. Skip the whole
+  // suite when the deployment is unhealthy instead of timing out 6× 120s.
+  requireLlmHealthy();
 
   const sendFirstPrompt = () => {
     cy.intercept('POST', page.createChatRoute).as('createChat');
@@ -13,7 +19,7 @@ describe('Navigation and Header - + New Chat', () => {
 
     page.typePrompt(firstPrompt).submitPromptWithEnter();
     cy.wait('@createChat').its('response.statusCode').should('be.oneOf', [200, 201]);
-    cy.wait('@sendQuery', { timeout: 120000 });
+    cy.wait('@sendQuery', { timeout: TIMEOUTS.llmResponse });
   };
 
   beforeEach(() => {
@@ -101,7 +107,7 @@ describe('Navigation and Header - + New Chat', () => {
 
     page.typePrompt('First prompt to trigger delayed response').submitPromptWithEnter();
 
-    cy.wrap(null, { timeout: 15000 }).should(() => {
+    cy.wrap(null, { timeout: TIMEOUTS.ui }).should(() => {
       expect(callCount, 'exactly one request fired so far').to.eq(1);
     });
 
@@ -121,7 +127,7 @@ describe('Navigation and Header - + New Chat', () => {
     });
 
     // Let the delayed request finish and verify no additional send-query request was created.
-    cy.wait('@sendQuery', { timeout: 120000 });
+    cy.wait('@sendQuery', { timeout: TIMEOUTS.llmResponse });
     cy.then(() => expect(callCount, 'no duplicate request fired').to.eq(1));
 
     cy.then(() => {

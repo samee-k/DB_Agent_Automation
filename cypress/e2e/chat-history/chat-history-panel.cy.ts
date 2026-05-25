@@ -2,6 +2,7 @@
 
 import { ChatHistoryPage } from '../../support/pages/ChatHistoryPage';
 import { Chat, ChatApiBody, ChatApiBodyData } from '../../support/types';
+import { TIMEOUTS } from '../../support/constants';
 import {
   ALIASES,
   interceptDeleteChat,
@@ -166,12 +167,12 @@ describe('Chat History — Panel', () => {
 
       // Wait on chat-creation an returns 200/201 on POST /api/chats, the new chat is guaranteed to be
       // persisted and will appear when we re-fetch the list below.
-      cy.wait('@chatCreate', { timeout: 30000 }).its('response.statusCode').should('be.oneOf', [200, 201]);
+      cy.wait('@chatCreate', { timeout: TIMEOUTS.apiFast }).its('response.statusCode').should('be.oneOf', [200, 201]);
 
       // Reload and re-open the panel to verify the new entry appears.
       interceptGetChats();
       page.visit();
-      cy.wait(`@${ALIASES.getChats}`, { timeout: 30000 }).its('response.statusCode').should('eq', 200);
+      cy.wait(`@${ALIASES.getChats}`, { timeout: TIMEOUTS.apiFast }).its('response.statusCode').should('eq', 200);
       page.openHistoryPanel();
       // Wait for items to render before asserting count.
       page.getHistoryItems().should('have.length.gte', 1);
@@ -197,12 +198,12 @@ describe('Chat History — Panel', () => {
         page.clickSendButton();
 
         // Wait on chat-creation ACK rather than a fixed sleep.
-        cy.wait('@chatCreate', { timeout: 30000 }).its('response.statusCode').should('be.oneOf', [200, 201]);
+        cy.wait('@chatCreate', { timeout: TIMEOUTS.apiFast }).its('response.statusCode').should('be.oneOf', [200, 201]);
 
         // Reload and verify the previously-existing chat is still in the panel.
         interceptGetChats();
         page.visit();
-        cy.wait(`@${ALIASES.getChats}`, { timeout: 30000 }).its('response.statusCode').should('eq', 200);
+        cy.wait(`@${ALIASES.getChats}`, { timeout: TIMEOUTS.apiFast }).its('response.statusCode').should('eq', 200);
         page.openHistoryPanel();
         // Wait for items to render before asserting count.
         page.getHistoryItems().should('have.length.gte', 1);

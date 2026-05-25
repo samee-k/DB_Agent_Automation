@@ -1,7 +1,9 @@
 /// <reference types="cypress" />
 
 import { ChainableEl } from '../types';
+import { TIMEOUTS } from '../constants';
 import { CHAT_INPUT_SELECTOR, SEND_BUTTON_SELECTORS, USER_MESSAGE_SELECTOR } from '../selectors/CommonSelectors';
+import { typeIntoComposer } from '../helpers/composer';
 
 export class UserPromptActionsPage {
   readonly chatPath = Cypress.env('chatPath') ?? '/dbagent/11/chat';
@@ -76,13 +78,7 @@ export class UserPromptActionsPage {
   }
 
   typePrompt(text: string) {
-    this.messageInput().then(($input: JQuery<HTMLElement>) => {
-      const el = $input[0] as HTMLElement;
-      const isContentEditable = el.getAttribute('contenteditable') === 'true' || el.isContentEditable;
-      cy.wrap($input).click();
-      if (!isContentEditable) cy.wrap($input).clear();
-      cy.wrap($input).type(text, { delay: 0 });
-    });
+    this.messageInput().then(($input: JQuery<HTMLElement>) => typeIntoComposer($input, text));
     return this;
   }
 
@@ -97,8 +93,8 @@ export class UserPromptActionsPage {
 
     this.typePrompt(text).submitPrompt();
 
-    cy.wait('@createChat', { timeout: 30000 }).its('response.statusCode').should('be.oneOf', [200, 201]);
-    cy.wait('@sendQuery', { timeout: 120000 }).its('response.statusCode').should('be.oneOf', [200, 201, 202]);
+    cy.wait('@createChat', { timeout: TIMEOUTS.apiFast }).its('response.statusCode').should('be.oneOf', [200, 201]);
+    cy.wait('@sendQuery', { timeout: TIMEOUTS.llmResponse }).its('response.statusCode').should('be.oneOf', [200, 201, 202]);
 
     cy.location('search', { timeout: 30000 }).should((search: string) => {
       const params = new URLSearchParams(search);
@@ -115,7 +111,7 @@ export class UserPromptActionsPage {
 
     this.typePrompt(text).submitPrompt();
 
-    cy.wait('@createChat', { timeout: 30000 }).its('response.statusCode').should('be.oneOf', [200, 201]);
+    cy.wait('@createChat', { timeout: TIMEOUTS.apiFast }).its('response.statusCode').should('be.oneOf', [200, 201]);
 
     cy.location('search', { timeout: 30000 }).should((search: string) => {
       const params = new URLSearchParams(search);
@@ -328,7 +324,10 @@ export class UserPromptActionsPage {
   }
 
   assertActionIconsHiddenForMessage(text: string, context: string) {
-    this.getUserMessageContaining(text).then(($msg: JQuery<HTMLElement>) => {
+    // .should() with a callback retries until the assertion passes or
+    // defaultCommandTimeout — handles the CSS hover transition without a
+    // hardcoded sleep at the call site.
+    this.getUserMessageContaining(text).should(($msg: JQuery<HTMLElement>) => {
       const copyVisible = $msg.find(this.copyIconSelector).filter(':visible').length > 0;
       const editVisible = $msg.find(this.editIconSelector).filter(':visible').length > 0;
       expect(copyVisible || editVisible, `action icons hidden (${context})`).to.eq(false);

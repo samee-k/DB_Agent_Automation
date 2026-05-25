@@ -1,8 +1,16 @@
 import 'dotenv/config';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { defineConfig } from 'cypress';
 import { onBeforeRun, onAfterSpec, onAfterRun } from './cypress/plugins/testrail-reporter';
+
+const LLM_HEALTH_CACHE_PATH = path.join(os.tmpdir(), 'cypress-db-agent-llm-health.json');
+
+interface LlmHealthCachePayload {
+  healthy: boolean;
+  timestamp: number;
+}
 
 export default defineConfig({
   projectId: 'dskfo2',
@@ -38,9 +46,35 @@ export default defineConfig({
           console.log(message);
           return null;
         },
+        'llmHealth:read'(): LlmHealthCachePayload | null {
+          try {
+            if (!fs.existsSync(LLM_HEALTH_CACHE_PATH)) return null;
+            const raw = fs.readFileSync(LLM_HEALTH_CACHE_PATH, 'utf8');
+            const parsed = JSON.parse(raw) as LlmHealthCachePayload;
+            if (typeof parsed?.healthy !== 'boolean') return null;
+            return parsed;
+          } catch {
+            return null;
+          }
+        },
+        'llmHealth:write'(payload: LlmHealthCachePayload): null {
+          try {
+            fs.writeFileSync(LLM_HEALTH_CACHE_PATH, JSON.stringify(payload), 'utf8');
+          } catch {
+            // Caching is best-effort — probe will simply re-run next spec.
+          }
+          return null;
+        },
       });
 
       on('before:run', async (details) => {
+        // Invalidate the cached LLM verdict so each `cypress run` re-probes
+        // (deployments come and go between runs).
+        try {
+          fs.unlinkSync(LLM_HEALTH_CACHE_PATH);
+        } catch {
+          // No cache yet — nothing to clean up.
+        }
         await onBeforeRun(details);
       });
 

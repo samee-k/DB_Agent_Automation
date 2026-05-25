@@ -1,10 +1,16 @@
 /// <reference types="cypress" />
 
 import { UserPromptActionsPage } from '../../support/pages/UserPromptActionsPage';
+import { requireLlmHealthy } from '../../support/helpers/deployment-health';
+import { TIMEOUTS } from '../../support/constants';
 
 describe('User Prompt Actions - Copy and Edit', () => {
   const page = new UserPromptActionsPage();
   const basePrompt = 'Show all users from the database';
+
+  // Edit-save tests in this suite wait 90s on `@editSave`. Skip everything
+  // when the deployment is unhealthy.
+  requireLlmHealthy();
 
   beforeEach(() => {
     cy.loginBySession();
@@ -35,8 +41,8 @@ describe('User Prompt Actions - Copy and Edit', () => {
       page.getEditIcon().should('be.visible');
 
       // Move mouse away to a safe area and verify icons hide again.
+      // assertActionIconsHiddenForMessage now retries internally so no sleep needed.
       cy.get('body').realHover({ position: 'topLeft' });
-      cy.wait(400);
       page.assertActionIconsHiddenForMessage(basePrompt, 'after unhover');
     });
   });
@@ -116,7 +122,7 @@ describe('User Prompt Actions - Copy and Edit', () => {
       page.assertEditModeLabelVisible();
       page.clearAndTypeInEditArea(savedPrompt);
       page.saveEdit();
-      cy.wait('@editSave', { timeout: 90000 });
+      cy.wait('@editSave', { timeout: TIMEOUTS.llmResponse });
 
       page.getUserMessageContaining(savedPrompt, 10000).should('be.visible');
       page.assertEditModeLabelNotVisible();
@@ -141,7 +147,7 @@ describe('User Prompt Actions - Copy and Edit', () => {
 
       page.clearAndTypeInEditArea('Updated prompt after edit');
       page.saveEdit();
-      cy.wait('@editSave', { timeout: 90000 });
+      cy.wait('@editSave', { timeout: TIMEOUTS.llmResponse });
 
       page.getUserMessageContaining('Updated prompt after edit', 10000).should('be.visible');
     });
@@ -167,7 +173,7 @@ describe('User Prompt Actions - Copy and Edit', () => {
       page.clickEditIcon();
       page.clearAndTypeInEditArea(editedPrompt);
       page.saveEdit();
-      cy.wait('@editSave', { timeout: 90000 });
+      cy.wait('@editSave', { timeout: TIMEOUTS.llmResponse });
 
       page.getUserMessageContaining(editedPrompt, 10000).should('be.visible');
     });
@@ -212,7 +218,7 @@ describe('User Prompt Actions - Copy and Edit', () => {
         .type('Line one{shift}{enter}Line two{shift}{enter}{shift}{enter}Line four after blank', { delay: 0 });
 
       page.saveEdit();
-      cy.wait('@editSave', { timeout: 90000 });
+      cy.wait('@editSave', { timeout: TIMEOUTS.llmResponse });
 
       page.getLastUserMessage().invoke('html').then((html: string) => {
         const hasLineBreaks = /<br|&#10;|\n/.test(html);
@@ -230,14 +236,14 @@ describe('User Prompt Actions - Copy and Edit', () => {
       page.clickEditIcon();
       page.clearAndTypeInEditArea(firstEdit);
       page.saveEdit();
-      cy.wait('@editSave', { timeout: 90000 });
+      cy.wait('@editSave', { timeout: TIMEOUTS.llmResponse });
       page.getUserMessageContaining(firstEdit, 10000).should('be.visible');
 
       page.hoverUserMessageContaining(firstEdit);
       page.clickEditIcon();
       page.clearAndTypeInEditArea(secondEdit);
       page.saveEdit();
-      cy.wait('@editSave', { timeout: 90000 });
+      cy.wait('@editSave', { timeout: TIMEOUTS.llmResponse });
       page.getUserMessageContaining(secondEdit, 10000).should('be.visible');
 
       // Current app behavior: previous edited prompt is also visible in the thread.
