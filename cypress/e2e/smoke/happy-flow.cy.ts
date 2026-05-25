@@ -26,27 +26,26 @@ describe('Happy Flow — Smoke', () => {
 
   const SMOKE_PROMPT = 'List all tables in the database';
 
-  let validEmail: string;
-  let validPassword: string;
-
-  before(() => {
-    cy.fixture<UsersFixture>('users').then((users) => {
-      validEmail = String(Cypress.env('USER_EMAIL') || users.validUser.email || '').trim();
-      validPassword = String(Cypress.env('USER_PASSWORD') || users.validUser.password || '').trim();
-    });
-  });
-
   // ── Step 1: Login ─────────────────────────────────────────────────────────
+  // Credentials are resolved inside the test so SMOKE-01 has no external setup dependency.
   it('SMOKE-01 — User can log in with valid credentials', () => {
-    loginPage.visitPage();
-    loginPage.getLogo().should('be.visible');
+    cy.fixture<UsersFixture>('users').then((users) => {
+      const email = String(Cypress.env('USER_EMAIL') || users.validUser.email || '').trim();
+      const password = String(Cypress.env('USER_PASSWORD') || users.validUser.password || '').trim();
 
-    loginPage.enterEmail(validEmail);
-    loginPage.enterPassword(validPassword);
-    loginPage.clickLoginButton();
+      expect(email, 'USER_EMAIL must be set').to.not.equal('');
+      expect(password, 'USER_PASSWORD must be set').to.not.equal('');
 
-    cy.url().should('not.include', '/login');
-    cy.contains(/Studio Projects|DB Agent|Welcome/i, { timeout: 20000 }).should('be.visible');
+      loginPage.visitPage();
+      loginPage.getLogo().should('be.visible');
+
+      loginPage.enterEmail(email);
+      loginPage.enterPassword(password);
+      loginPage.clickLoginButton();
+
+      cy.url().should('not.include', '/login');
+      cy.contains(/Studio Projects|DB Agent|Welcome/i, { timeout: 20000 }).should('be.visible');
+    });
   });
 
   // ── Step 2: Welcome screen ────────────────────────────────────────────────
