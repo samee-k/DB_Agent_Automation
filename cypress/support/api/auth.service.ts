@@ -32,26 +32,3 @@ export function loginBySessionUi() {
   }, { cacheAcrossSpecs: true });
 }
 
-export function loginByApiWithEnv() {
-  const email = Cypress.env('USER_EMAIL');
-  const password = Cypress.env('USER_PASSWORD');
-
-  if (!email || !password) {
-    throw new Error(
-      'loginByApi: CYPRESS_USER_EMAIL and CYPRESS_USER_PASSWORD env vars must be set. ' +
-      'Do not rely on the fixture; provide credentials through CI secrets.',
-    );
-  }
-
-  cy.request('POST', '/api/auth/login', { email, password }).then((res: LoginResponse) => {
-    expect(res.status).to.eq(200);
-    expect(res.body?.data?.access_token).to.be.a('string');
-    expect(res.body?.data?.refresh_token).to.be.a('string');
-
-    cy.window().then((windowObject: Window) => {
-      windowObject.localStorage.setItem('access_token', res.body.data.access_token);
-      windowObject.localStorage.setItem('refresh_token', res.body.data.refresh_token);
-      windowObject.localStorage.setItem('userData', JSON.stringify(res.body.data.userInfo ?? {}));
-    });
-  });
-}
