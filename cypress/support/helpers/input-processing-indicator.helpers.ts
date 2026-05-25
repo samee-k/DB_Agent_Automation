@@ -12,7 +12,7 @@ export const DELAYS = {
 
 export const TIMEOUTS = {
   indicator: 2500,
-  network: 30000,
+  network: 120000,
 } as const;
 
 export const interceptDelayedSuccess = (

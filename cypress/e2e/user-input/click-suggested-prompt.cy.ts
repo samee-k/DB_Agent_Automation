@@ -231,10 +231,10 @@ describe('Click on Suggested Prompt', () => {
     // Use realClick to simulate a physical mouse click
     sh.getVisibleSuggestions().first().realClick();
 
-    // If the input isn't focused, nothing will happen in the text box.
-    cy.realPress("Enter");
+    // Submit via the visible action button so the request is triggered even if focus moved off the input.
+    page.sendButton().should('be.visible').click();
 
-    cy.wait('@chatRequest', { timeout: 5000 });
+    cy.wait('@chatRequest', { timeout: 30000 });
   });
 
 

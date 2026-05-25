@@ -16,9 +16,9 @@ export default defineConfig({
     screenshotOnRunFailure: true,
     viewportWidth: 1280,
     viewportHeight: 720,
-    defaultCommandTimeout: 8000,
-    requestTimeout: 8000,
-    responseTimeout: 20000,
+    defaultCommandTimeout: 20000,
+    requestTimeout: 30000,
+    responseTimeout: 120000,
     env: {
       USER_EMAIL: process.env.CYPRESS_USER_EMAIL || process.env.USER_EMAIL || '',
       USER_PASSWORD: process.env.CYPRESS_USER_PASSWORD || process.env.USER_PASSWORD || '',

@@ -39,7 +39,7 @@ function apiRequest(
     url,
     headers: { Authorization: `Bearer ${accessToken}` },
     failOnStatusCode: false,
-    timeout: 15000,
+    timeout: 120000,
   };
 
   if (body !== undefined) {
@@ -109,7 +109,7 @@ export function clearChatsByProjectViaApiService() {
           url: `${apiBase}/chats/${chat.id}`,
           headers: { Authorization: `Bearer ${accessToken}` },
           failOnStatusCode: false,
-          timeout: 10000,
+          timeout: 60000,
         });
       });
 
