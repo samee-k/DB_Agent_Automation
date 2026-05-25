@@ -6,86 +6,47 @@ function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, '');
 }
 
-function uniquePush(target: string[], value: string) {
-  if (!value) return;
-  if (!target.includes(value)) {
-    target.push(value);
-  }
+/**
+ * Returns the single configured API base URL.
+ * Prefers CYPRESS_API_URL; falls back to baseUrl + '/api'.
+ * Throws immediately if neither is configured so misconfiguration is obvious.
+ */
+function resolveApiBase(): string {
+  const apiUrl = trimTrailingSlash(String(Cypress.env('apiUrl') || ''));
+  if (apiUrl) return apiUrl;
+
+  const baseUrl = trimTrailingSlash(String(Cypress.config('baseUrl') || ''));
+  if (baseUrl) return `${baseUrl}/api`;
+
+  throw new Error(
+    'Chat API base URL is not configured. ' +
+    'Set CYPRESS_API_URL or CYPRESS_BASE_URL before running tests.',
+  );
 }
 
-function buildApiBaseCandidates(): string[] {
-  const configuredApiUrl = trimTrailingSlash(String(Cypress.env('apiUrl') || ''));
-  const configuredAppUrl = trimTrailingSlash(String(Cypress.env('appUrl') || ''));
-  const configuredBaseUrl = trimTrailingSlash(String(Cypress.config('baseUrl') || ''));
-
-  const rawBases = [configuredApiUrl, configuredAppUrl, configuredBaseUrl]
-    .filter(Boolean);
-
-  const candidates: string[] = [];
-  rawBases.forEach((base) => {
-    const normalized = trimTrailingSlash(base);
-
-    uniquePush(candidates, normalized);
-
-    if (normalized.endsWith('/api')) {
-      uniquePush(candidates, normalized.replace(/\/api$/, ''));
-    } else {
-      uniquePush(candidates, `${normalized}/api`);
-    }
-  });
-
-  return candidates;
-}
-
-function requestWithApiFallback(
+function apiRequest(
   method: 'GET' | 'POST' | 'DELETE',
   path: string,
   accessToken: string,
   body?: unknown,
-  throwOnFailure = true,
 ): Cypress.Chainable<Cypress.Response<ChatApiBody>> {
-  const bases = buildApiBaseCandidates();
+  const base = resolveApiBase();
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const url = `${base}${normalizedPath}`;
 
-  const tryBase = (index: number): Cypress.Chainable<Cypress.Response<ChatApiBody>> => {
-    const base = bases[index];
-    const url = `${base}${normalizedPath}`;
-
-    const options: Partial<Cypress.RequestOptions> = {
-      method,
-      url,
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      failOnStatusCode: false,
-      timeout: 15000,
-    };
-
-    if (body !== undefined) {
-      options.body = body as Cypress.RequestBody;
-    }
-
-    return cy.request(options).then((res: Cypress.Response<ChatApiBody>) => {
-      if (res.status >= 200 && res.status < 400) {
-        return cy.wrap(res, { log: false });
-      }
-
-      if (index < bases.length - 1) {
-        return tryBase(index + 1);
-      }
-
-      if (!throwOnFailure) {
-        return cy.wrap(res, { log: false });
-      }
-
-      throw new Error(
-        `All chat API endpoints failed for ${method} ${normalizedPath}. ` +
-        `Tried: ${bases.join(', ')}. Last status: ${res.status}`,
-      );
-    }) as Cypress.Chainable<Cypress.Response<ChatApiBody>>;
+  const options: Partial<Cypress.RequestOptions> = {
+    method,
+    url,
+    headers: { Authorization: `Bearer ${accessToken}` },
+    failOnStatusCode: false,
+    timeout: 15000,
   };
 
-  return tryBase(0);
+  if (body !== undefined) {
+    options.body = body as Cypress.RequestBody;
+  }
+
+  return cy.request(options) as Cypress.Chainable<Cypress.Response<ChatApiBody>>;
 }
 
 function extractChatList(body: ChatApiBody | unknown): Chat[] {
@@ -101,29 +62,49 @@ function extractChatList(body: ChatApiBody | unknown): Chat[] {
   return [];
 }
 
+function waitForEmptyChatList(
+  accessToken: string,
+  projectId: string,
+  retries = 8,
+  intervalMs = 1000,
+) : Cypress.Chainable<unknown> {
+  return apiRequest('GET', `/chats/by-project/${projectId}`, accessToken).then((res: ChatListResponse) => {
+    expect(res.status).to.eq(200);
+
+    const chatList = extractChatList(res.body);
+    if (chatList.length === 0) {
+      return cy.wrap(null, { log: false }) as Cypress.Chainable<unknown>;
+    }
+
+    expect(retries, 'chat list should become empty after cleanup').to.be.greaterThan(0);
+    return cy.wait(intervalMs, { log: false }).then(() =>
+      waitForEmptyChatList(accessToken, projectId, retries - 1, intervalMs),
+    ) as Cypress.Chainable<unknown>;
+  });
+}
+
 export function clearChatsByProjectViaApiService() {
   const projectId = Cypress.env('projectId') || '11';
 
-  cy.window().then((windowObject: Window) => {
+  return cy.window().then((windowObject: Window) => {
     const accessToken = windowObject.localStorage.getItem('access_token') || '';
     expect(accessToken, 'access_token for cleanup').to.be.a('string').and.not.be.empty;
 
-    requestWithApiFallback('GET', `/chats/by-project/${projectId}`, accessToken).then((res: ChatListResponse) => {
+    return apiRequest('GET', `/chats/by-project/${projectId}`, accessToken).then((res: ChatListResponse) => {
       expect(res.status).to.eq(200);
 
       const chatList = extractChatList(res.body);
 
       if (chatList.length === 0) return;
 
-      cy.log(`Deleting ${chatList.length} chats via parallel fetch`);
+      cy.log(`Deleting ${chatList.length} chats`);
 
-      // Use the configured API URL (first candidate — localhost filtered out)
-      const apiBase = buildApiBaseCandidates()[0];
+      const apiBase = resolveApiBase();
 
       // Sequential deletion via cy.request (bypasses CORS, reliable)
       cy.wrap(chatList, { log: false, timeout: 300000 }).each((chat: Chat) => {
         if (!chat?.id) return;
-        cy.request({
+        return cy.request({
           method: 'DELETE',
           url: `${apiBase}/chats/${chat.id}`,
           headers: { Authorization: `Bearer ${accessToken}` },
@@ -131,6 +112,8 @@ export function clearChatsByProjectViaApiService() {
           timeout: 10000,
         });
       });
+
+      return cy.then(() => waitForEmptyChatList(accessToken, String(projectId)));
     });
   });
 }
@@ -138,11 +121,11 @@ export function clearChatsByProjectViaApiService() {
 export function seedChatsByProjectViaApiIfEmptyService(targetCount = 5, upperLimit = 20) {
   const projectId = Number(Cypress.env('projectId') || '11');
 
-  cy.window().then((windowObject: Window) => {
+  return cy.window().then((windowObject: Window) => {
     const accessToken = windowObject.localStorage.getItem('access_token') || '';
     expect(accessToken, 'access_token for seeding').to.be.a('string').and.not.be.empty;
 
-    requestWithApiFallback('GET', `/chats/by-project/${projectId}`, accessToken).then((listRes: ChatListResponse) => {
+    apiRequest('GET', `/chats/by-project/${projectId}`, accessToken).then((listRes: ChatListResponse) => {
       expect(listRes.status).to.eq(200);
 
       const chatList = extractChatList(listRes.body);
@@ -160,8 +143,7 @@ export function seedChatsByProjectViaApiIfEmptyService(targetCount = 5, upperLim
       const payloads = Array.from({ length: targetCount }, () => ({ projectId }));
 
       cy.wrap(payloads).each((payload: { projectId: number }) => {
-        requestWithApiFallback('POST', '/chats', accessToken, payload, false)
-          .then((createRes) => {
+        return apiRequest('POST', '/chats', accessToken, payload).then((createRes) => {
             // Some backend environments block direct chat creation via POST /chats (405).
             // In those cases callers can fall back to UI-driven chat creation.
             if (createRes.status >= 200 && createRes.status < 400) {
@@ -176,26 +158,23 @@ export function seedChatsByProjectViaApiIfEmptyService(targetCount = 5, upperLim
 export function ensureChatsByProjectMinCountService(minCount = 10, upperLimit = 50) {
   const projectId = Number(Cypress.env('projectId') || '11');
 
-  cy.window().then((windowObject: Window) => {
+  return cy.window().then((windowObject: Window) => {
     const accessToken = windowObject.localStorage.getItem('access_token') || '';
     expect(accessToken, 'access_token for min-count seeding').to.be.a('string').and.not.be.empty;
 
-    requestWithApiFallback('GET', `/chats/by-project/${projectId}`, accessToken).then((listRes: ChatListResponse) => {
-      expect(listRes.status).to.eq(200);
-
+    apiRequest('GET', `/chats/by-project/${projectId}`, accessToken).then((listRes: ChatListResponse) => {
       const chatList = extractChatList(listRes.body);
 
       const existingCount = chatList.length;
       if (existingCount >= minCount || existingCount >= upperLimit) {
-        return;
+        return cy.wrap(undefined);
       }
 
       const toCreate = Math.min(minCount - existingCount, upperLimit - existingCount);
       const payloads = Array.from({ length: Math.max(toCreate, 0) }, () => ({ projectId }));
 
-      cy.wrap(payloads).each((payload: { projectId: number }) => {
-        requestWithApiFallback('POST', '/chats', accessToken, payload, false)
-          .then((createRes) => {
+      return cy.wrap(payloads).each((payload: { projectId: number }) => {
+        return apiRequest('POST', '/chats', accessToken, payload).then((createRes) => {
             if (createRes.status >= 200 && createRes.status < 400) {
               expect(createRes.status).to.be.oneOf([200, 201]);
             }
