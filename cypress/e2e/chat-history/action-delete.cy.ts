@@ -5,7 +5,6 @@ import {
   ALIASES,
   interceptDeleteChat,
   interceptGetChats,
-  seedAndVisit,
 } from '../../support/helpers/chat-history.helpers';
 
 describe('Chat History — Action (Delete)', () => {
@@ -14,7 +13,7 @@ describe('Chat History — Action (Delete)', () => {
   // TODO(QA-BACKEND): Replace API seeding with deterministic cleanup endpoint when available.
   beforeEach(() => {
     cy.loginBySession();
-    seedAndVisit(page);
+    cy.visit(page.chatPath);
   });
 
   it('C698115 - Verify that the user can delete a chat history item.', () => {
@@ -88,50 +87,40 @@ describe('Chat History — Action (Delete)', () => {
   });
 
   it('C775313 - Verify deleting the last chat shows the "No Conversation History" empty state.', () => {
-    // Isolate: clear everything then seed exactly one item so the UI test controls state precisely.
-    cy.clearChatsByProjectViaApi();
-    cy.seedChatsByProjectViaApiIfEmpty(1, 5);
+    const initialChat = {
+      id: 999001,
+      session: 'seed-session',
+      title: 'Seed chat',
+      createdAt: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
-    interceptDeleteChat();
-    interceptGetChats();
-    page.visit();
+    let chatList = [initialChat];
 
-    // The GET may return 200 with an empty body if the seed POST hasn't been
-    // committed by the backend yet (eventual consistency). Check the response
-    // body; if empty, reload once to pick up the freshly written item.
-    cy.wait(`@${ALIASES.getChats}`, { timeout: 30000 }).then((interception) => {
-      expect(interception.response?.statusCode).to.eq(200);
-
-      const body = interception.response?.body;
-      const list: unknown[] = Array.isArray(body)
-        ? body
-        : (body?.data?.data ?? body?.data?.chats ?? body?.data?.items ?? body?.data ?? body?.chats ?? body?.items ?? []);
-
-      if ((list as unknown[]).length === 0) {
-        // Seed not yet visible — reload to give the backend a moment to catch up.
-        interceptGetChats();
-        page.visit();
-        cy.wait(`@${ALIASES.getChats}`, { timeout: 30000 }).its('response.statusCode').should('eq', 200);
-      }
+    interceptDeleteChat(() => {
+      chatList = [];
     });
 
+    interceptGetChats(() => ({ data: chatList }));
+
+    page.visit();
+    cy.wait(`@${ALIASES.getChats}`, { timeout: 30000 }).its('response.statusCode').should('eq', 200);
+
     page.openHistoryPanel();
-    // Extra DOM timeout: panel rendering is async after the network response.
-    page.getHistoryItems().should('have.length.at.least', 1);
+    page.getHistoryItems().should('have.length', 1);
 
     page.openHistoryMenuByIndex(0);
     page.clickDeleteAction();
 
-    // Re-intercept BEFORE confirming so the alias is fresh and catches the
-    // post-delete list refresh that the app fires automatically.
-    interceptGetChats();
     page.confirmDelete();
     cy.wait(`@${ALIASES.deleteChat}`).its('response.statusCode').should('eq', 200);
-    // Wait for the UI's own refresh request — guarantees the DOM reflects the
-    // updated (empty) list before we assert, so no arbitrary timeout is needed.
-    cy.wait(`@${ALIASES.getChats}`, { timeout: 15000 }).its('response.statusCode').should('eq', 200);
 
-    page.getPanel().should('contain.text', 'No Conversation History');
+    page.getPanel().should('be.visible');
+    page.getEmptyState()
+      .should('be.visible')
+      .and('contain.text', 'No Conversation History');
     page.getHistoryItemsOptional().its('length').should('eq', 0);
   });
 });
