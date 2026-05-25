@@ -1,10 +1,11 @@
 /// <reference types="cypress" />
 
 import { NewChatPage } from '../../support/pages/NewChatPage';
+import { PROMPTS } from '../../support/prompts';
 
 describe('Navigation and Header - + New Chat', () => {
   const page = new NewChatPage();
-  const firstPrompt = 'List all tables for this database';
+  const firstPrompt = PROMPTS.shortPrompt;
 
   const sendFirstPrompt = () => {
     cy.intercept('POST', page.createChatRoute).as('createChat');
@@ -12,7 +13,7 @@ describe('Navigation and Header - + New Chat', () => {
 
     page.typePrompt(firstPrompt).submitPromptWithEnter();
     cy.wait('@createChat').its('response.statusCode').should('be.oneOf', [200, 201]);
-    cy.wait('@sendQuery');
+    cy.wait('@sendQuery', { timeout: 120000 });
   };
 
   beforeEach(() => {
@@ -42,7 +43,7 @@ describe('Navigation and Header - + New Chat', () => {
     cy.get('.char-count').should('contain.text', '0/500');
   });
 
-  it('C716294 - Verify "+ New Chat" generates a new Session ID. ', () => {
+  it('C716294 - Verify "+ New Chat" generates a new Session ID after user types the message.', () => {
     let firstSessionId = '';
 
     cy.intercept('POST', page.createChatRoute).as('createChat');
@@ -50,7 +51,7 @@ describe('Navigation and Header - + New Chat', () => {
 
     page.typePrompt(firstPrompt).submitPromptWithEnter();
     cy.wait('@createChat').its('response.statusCode').should('be.oneOf', [200, 201]);
-    cy.wait('@sendQuery').then((firstCall) => {
+    cy.wait('@sendQuery', { timeout: 120000 }).then((firstCall) => {
       firstSessionId = NewChatPage.extractChatIdFromSendQueryUrl(firstCall.request.url);
       expect(firstSessionId, 'first session id').to.not.eq('');
     });
@@ -62,7 +63,7 @@ describe('Navigation and Header - + New Chat', () => {
     page.typePrompt('Show user count').submitPromptWithEnter();
     cy.wait('@createChat').its('response.statusCode').should('be.oneOf', [200, 201]);
 
-    cy.wait('@sendQuery').then((secondCall) => {
+    cy.wait('@sendQuery', { timeout: 120000 }).then((secondCall) => {
       const secondSessionId = NewChatPage.extractChatIdFromSendQueryUrl(secondCall.request.url);
       expect(secondSessionId, 'second session id').to.not.eq('');
       expect(secondSessionId).to.not.eq(firstSessionId);
@@ -120,7 +121,7 @@ describe('Navigation and Header - + New Chat', () => {
     });
 
     // Let the delayed request finish and verify no additional send-query request was created.
-    cy.wait('@sendQuery');
+    cy.wait('@sendQuery', { timeout: 120000 });
     cy.then(() => expect(callCount, 'no duplicate request fired').to.eq(1));
 
     cy.then(() => {

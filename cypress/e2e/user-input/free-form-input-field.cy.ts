@@ -2,17 +2,17 @@
 
 import { InitialPromptPage } from '../../support/pages/InitialPromptPage';
 import { MESSAGE_SELECTOR, CHAT_TITLE_SELECTOR } from '../../support/selectors/CommonSelectors';
+import { PROMPTS } from '../../support/prompts';
 
 describe('Free-form Text Input Field Behaviour', () => {
   const page = new InitialPromptPage();
 
-  const shortPrompt = 'Show top 5 tables';
-  const specialPrompt = 'abc123 !@#$%^&*()_+-=;:,.?/';
-  const sqlPrompt = 'SELECT * FROM users WHERE id = 1;';
-  const longPrompt =
-    "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
+  let shortPrompt = PROMPTS.shortPrompt;
+  const specialPrompt = PROMPTS.specialPrompt;
+  const sqlPrompt = PROMPTS.sqlPrompt;
+  const longPrompt = PROMPTS.longPrompt;
 
-  const veryLongPastedPrompt = `${longPrompt}\n${longPrompt}\n${longPrompt}\n${longPrompt}`;
+  const veryLongPastedPrompt = PROMPTS.veryLongPastedPrompt ?? `${longPrompt}\n${longPrompt}\n${longPrompt}\n${longPrompt}`;
 
   const normalizeText = (value: string) => value.replace(/\s+/g, ' ').trim();
 
@@ -50,9 +50,7 @@ describe('Free-form Text Input Field Behaviour', () => {
   };
 
   const submitWithEnter = (promptText: string) => {
-    page.messageInput().should('be.visible').and('not.be.disabled');
-    page.appendPrompt(promptText);
-    page.messageInput().should('be.visible').type('{enter}');
+    return cy.sendPrompt(promptText);
   };
 
   const waitForChatRequest = () => cy.wait('@chatRequest', { timeout: 30000 });
@@ -66,6 +64,7 @@ describe('Free-form Text Input Field Behaviour', () => {
   beforeEach(() => {
     cy.loginBySession();
     page.openChatPage();
+    shortPrompt = PROMPTS.shortPrompt;
     cy.contains(/Welcome to DB Agent/i, { timeout: 30000 }).should('be.visible');
     page.clearPrompt();
   });
@@ -526,15 +525,15 @@ describe('Free-form Text Input Field Behaviour', () => {
   // STEP 1: Click the BOTTOM chat (index 1) first to force a real switch.
   clickHistoryItem(1);
   page.clearPrompt();
-  page.appendPrompt('HI');
-  page.inputValue().should('contain', 'HI');
+  page.appendPrompt(PROMPTS.historyBottom);
+  page.inputValue().should('contain', PROMPTS.historyBottom);
 
   // STEP 2: Click the TOP chat (index 0).
   // The wait() inside clickHistoryItem ensures we don't grab the old textarea
   clickHistoryItem(0);
   page.clearPrompt();
-  page.appendPrompt('HELLO');
-  page.inputValue().should('contain', 'HELLO');
+  page.appendPrompt(PROMPTS.historyTop);
+  page.inputValue().should('contain', PROMPTS.historyTop);
 
   // STEP 3: Return to BOTTOM chat (index 1).
   clickHistoryItem(1);

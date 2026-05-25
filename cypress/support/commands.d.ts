@@ -11,6 +11,7 @@ declare global {
       clearChatsByProjectViaApi(): Chainable<void>;
       seedChatsByProjectViaApiIfEmpty(targetCount?: number, upperLimit?: number): Chainable<void>;
       ensureChatsByProjectMinCount(minCount?: number, upperLimit?: number): Chainable<void>;
+      sendPrompt(promptText: string, options?: { timeout?: number }): Chainable<void>;
     }
   }
 }

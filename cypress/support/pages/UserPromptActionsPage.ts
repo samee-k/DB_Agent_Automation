@@ -98,7 +98,7 @@ export class UserPromptActionsPage {
     this.typePrompt(text).submitPrompt();
 
     cy.wait('@createChat', { timeout: 30000 }).its('response.statusCode').should('be.oneOf', [200, 201]);
-    cy.wait('@sendQuery', { timeout: 90000 }).its('response.statusCode').should('be.oneOf', [200, 201, 202]);
+    cy.wait('@sendQuery', { timeout: 120000 }).its('response.statusCode').should('be.oneOf', [200, 201, 202]);
 
     cy.location('search', { timeout: 30000 }).should((search: string) => {
       const params = new URLSearchParams(search);

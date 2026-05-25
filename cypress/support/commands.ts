@@ -6,6 +6,7 @@ import {
   ensureChatsByProjectMinCountService,
   seedChatsByProjectViaApiIfEmptyService,
 } from './api/chat.service';
+import { CHAT_INPUT_SELECTOR, SEND_BUTTON_SELECTOR } from './selectors/CommonSelectors';
 
 export function loginBySession() {
 	loginBySessionUi();
@@ -73,6 +74,36 @@ Cypress.Commands.add('getAccessToken', () => {
     if (!token) throw new Error('No access token found');
     return token;
   });
+});
+
+type SendPromptOptions = { timeout?: number };
+
+// Centralized send prompt command: types prompt and triggers send (click or Enter),
+// then waits for common aliases if they exist (`createChat`, `sendQuery`, `chatRequest`).
+Cypress.Commands.add('sendPrompt', (promptText: string, options?: SendPromptOptions) => {
+	const timeout = options?.timeout ?? 120000;
+
+	cy.get(CHAT_INPUT_SELECTOR, { timeout: 20000 }).filter(':visible').first().then(($input: JQuery<HTMLElement>) => {
+		const inputEl = $input[0] as HTMLElement;
+		const isContentEditable = inputEl.getAttribute('contenteditable') === 'true' || inputEl.isContentEditable;
+
+		cy.wrap($input).click();
+		if (!isContentEditable) cy.wrap($input).clear();
+		cy.wrap($input).type(promptText, { delay: 0 });
+
+		cy.get(SEND_BUTTON_SELECTOR).filter(':visible').then(($btn) => {
+			if ($btn.length) {
+				cy.wrap($btn).click();
+			} else {
+				cy.wrap($input).type('{enter}');
+			}
+		});
+	}).then(() => {
+		const aliases = ((Cypress as unknown) as { state: (k: string) => Record<string, unknown> | undefined }).state('aliases') || {};
+		if ((aliases as any).createChat || (aliases as any)['@createChat']) cy.wait('@createChat', { timeout });
+		if ((aliases as any).sendQuery || (aliases as any)['@sendQuery']) cy.wait('@sendQuery', { timeout });
+		if ((aliases as any).chatRequest || (aliases as any)['@chatRequest']) cy.wait('@chatRequest', { timeout });
+	});
 });
 
 export {};

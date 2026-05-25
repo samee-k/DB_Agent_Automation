@@ -23,3 +23,13 @@ export interface ChatHistoryFixture {
   searchTerm: string;
   searchNoMatchTerm: string;
 }
+
+export interface PromptsFixture {
+  shortPrompt: string;
+  specialPrompt: string;
+  sqlPrompt: string;
+  longPrompt: string;
+  veryLongPastedPrompt: string | null;
+  historyBottom: string;
+  historyTop: string;
+}

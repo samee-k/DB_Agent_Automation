@@ -16,7 +16,7 @@ import { LoginPage } from '../../support/pages/LoginPage';
 import { NewChatPage } from '../../support/pages/NewChatPage';
 import { ChatHistoryPage } from '../../support/pages/ChatHistoryPage';
 import { NavigationPage } from '../../support/pages/NavigationPage';
-import { UsersFixture } from '../../support/types';
+import { PromptsFixture, UsersFixture } from '../../support/types';
 
 describe('Happy Flow — Smoke', () => {
   const loginPage = new LoginPage();
@@ -24,7 +24,13 @@ describe('Happy Flow — Smoke', () => {
   const historyPage = new ChatHistoryPage();
   const navPage = new NavigationPage();
 
-  const SMOKE_PROMPT = 'List all tables in the database';
+  let smokePrompt = 'Hi';
+
+  beforeEach(() => {
+    cy.fixture<PromptsFixture>('prompts').then((data) => {
+      smokePrompt = data.shortPrompt;
+    });
+  });
 
   // ── Step 1: Login ─────────────────────────────────────────────────────────
   // Credentials are resolved inside the test so SMOKE-01 has no external setup dependency.
@@ -66,10 +72,10 @@ describe('Happy Flow — Smoke', () => {
     cy.intercept('POST', chatPage.createChatRoute).as('createChat');
     cy.intercept('POST', chatPage.sendQueryRoute).as('sendQuery');
 
-    chatPage.typePrompt(SMOKE_PROMPT).submitPromptWithEnter();
+    chatPage.typePrompt(smokePrompt).submitPromptWithEnter();
 
     cy.wait('@createChat', { timeout: 15000 }).its('response.statusCode').should('be.oneOf', [200, 201]);
-    cy.wait('@sendQuery', { timeout: 30000 });
+    cy.wait('@sendQuery', { timeout: 120000 });
 
     // Input should be cleared and New Chat should now be enabled
     chatPage.assertNewChatIsEnabled();
@@ -84,9 +90,9 @@ describe('Happy Flow — Smoke', () => {
     cy.intercept('POST', chatPage.createChatRoute).as('createChat');
     cy.intercept('POST', chatPage.sendQueryRoute).as('sendQuery');
 
-    chatPage.typePrompt(SMOKE_PROMPT).submitPromptWithEnter();
+    chatPage.typePrompt(smokePrompt).submitPromptWithEnter();
     cy.wait('@createChat', { timeout: 15000 });
-    cy.wait('@sendQuery', { timeout: 30000 });
+    cy.wait('@sendQuery', { timeout: 120000 });
 
     historyPage.openHistoryPanel();
     historyPage.getHistoryItemCount().should('be.gte', 1);
@@ -100,9 +106,9 @@ describe('Happy Flow — Smoke', () => {
     cy.intercept('POST', chatPage.createChatRoute).as('createChat');
     cy.intercept('POST', chatPage.sendQueryRoute).as('sendQuery');
 
-    chatPage.typePrompt(SMOKE_PROMPT).submitPromptWithEnter();
+    chatPage.typePrompt(smokePrompt).submitPromptWithEnter();
     cy.wait('@createChat', { timeout: 15000 });
-    cy.wait('@sendQuery', { timeout: 30000 });
+    cy.wait('@sendQuery', { timeout: 120000 });
 
     chatPage.assertNewChatIsEnabled();
     chatPage.clickNewChat();

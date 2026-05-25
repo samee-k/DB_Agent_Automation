@@ -150,7 +150,8 @@ describe('Navigation and Header', () => {
   });
 
   it('C669443 - Verify that the currently selected menu item is visually distinct', () => {
-    cy.get('a.menu-item.active').invoke('text').should('include', 'Chat with DB Agent');
+    // Use the page helper which retries with broader selectors (handles `a.menu-item` or `.menu-item`)
+    navigationPage.getSelectedMenuItemLabel().should('include', 'Chat with DB Agent');
 
     cy.get(SELECTORS.navLink('Labs')).first().click();
     cy.get(SELECTORS.navLink('Labs')).first().should('have.class', 'active');
