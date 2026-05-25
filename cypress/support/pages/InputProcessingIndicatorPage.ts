@@ -1,6 +1,7 @@
 /// <reference types="cypress" />
 
 import { ChainableEl } from '../types';
+import { CHAT_INPUT_SELECTOR, SEND_BUTTON_SELECTOR } from '../selectors/CommonSelectors';
 
 export class InputProcessingIndicatorPage {
   readonly chatPath = Cypress.env('chatPath') ?? '/dbagent/11/chat';
@@ -8,28 +9,10 @@ export class InputProcessingIndicatorPage {
   readonly processingStateRegex = /Data analysis|Data extraction|Data processing|Generating visuals/i;
   readonly editModeLabelRegex = /Edit your prompt/i;
 
-  readonly promptInputSelector = [
-    '#dbagent-textarea',
-    'textarea.dbagent-textarea',
-    'textarea[id="dbagent-textarea"]',
-    '[data-testid="message-input"]',
-    '[data-testid="chat-input"]',
-    '[data-cy="chat-input"]',
-    'textarea.chat-input',
-    'textarea[placeholder*="Ask here"]',
-    '[role="textbox"][placeholder*="Ask here"]',
-    '[role="textbox"]',
-    '[contenteditable="true"]',
-    '.ProseMirror',
-    '.ql-editor',
-  ].join(', ');
+  readonly promptInputSelector = CHAT_INPUT_SELECTOR;
 
-  readonly sendButtonSelector = [
-    '[data-cy="send-button"]',
-    'button[aria-label="Send"][type="button"]',
-    'button[aria-label*="Send"]',
-    'button[type="submit"]',
-  ].join(', ');
+  // Note: includes button[type="submit"] for this page's specific edit-mode save button.
+  readonly sendButtonSelector = `${SEND_BUTTON_SELECTOR}, button[type="submit"]`;
 
   readonly suggestionItemSelector = '.floating-suggestion-box .suggestion-item';
   readonly historyToggleSelector = '[data-cy="chat-history-toggle"], button.icon-btn-alt';

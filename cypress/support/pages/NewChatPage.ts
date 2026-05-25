@@ -1,24 +1,14 @@
 /// <reference types="cypress" />
 
 import { ChainableEl } from '../types';
+import { CHAT_INPUT_SELECTOR } from '../selectors/CommonSelectors';
 
 export class NewChatPage {
   readonly chatPath = Cypress.env('chatPath') ?? '/dbagent/11/chat';
   readonly createChatRoute = /\/api\/chats(?:\?.*)?$/;
   readonly sendQueryRoute = '**/api/chats/*/send-query';
 
-  private readonly promptInputSelector = [
-    '[data-testid="message-input"]',
-    '[data-testid="chat-input"]',
-    '[data-cy="chat-input"]',
-    'textarea.chat-input',
-    'textarea[placeholder*="Ask here"]',
-    '[role="textbox"][placeholder*="Ask here"]',
-    '[role="textbox"]',
-    '[contenteditable="true"]',
-    '.ProseMirror',
-    '.ql-editor',
-  ].join(', ');
+  private readonly promptInputSelector = CHAT_INPUT_SELECTOR;
 
   private readonly welcomeTitleRegex = /Welcome to DB Agent/i;
   private readonly chatTitleSelectors = [

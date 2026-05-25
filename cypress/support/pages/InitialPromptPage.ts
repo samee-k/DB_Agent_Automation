@@ -1,12 +1,12 @@
 /// <reference types="cypress" />
 
 import { ChainableEl } from '../types';
-import { CHAT_INPUT_SELECTORS, SEND_BUTTON_SELECTOR } from '../selectors/CommonSelectors';
+import { CHAT_INPUT_SELECTOR, SEND_BUTTON_SELECTOR } from '../selectors/CommonSelectors';
 
 export class InitialPromptPage {
   readonly chatPath = Cypress.env('chatPath') || `/dbagent/${Cypress.env('projectId') || '11'}/chat`;
   readonly chatApiRouteMatcher = '**/api/chats/*/send-query';
-  private readonly chatInputSelector = [...CHAT_INPUT_SELECTORS, 'textarea.form-control'].join(', ');
+  private readonly chatInputSelector = `${CHAT_INPUT_SELECTOR}, textarea.form-control`;
   private readonly historyIconSelector = [
     '[data-cy="chat-history-toggle"]',
     '[data-testid="history-icon"]',
