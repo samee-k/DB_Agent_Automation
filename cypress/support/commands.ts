@@ -76,12 +76,13 @@ Cypress.Commands.add('getAccessToken', () => {
   });
 });
 
-type SendPromptOptions = { timeout?: number };
+type SendPromptOptions = { timeout?: number; waitFor?: string | string[] };
 
-// Centralized send prompt command: types prompt and triggers send (click or Enter),
-// then waits for common aliases if they exist (`createChat`, `sendQuery`, `chatRequest`).
+// Centralized send prompt command: types prompt and triggers send (click or Enter).
+// Pass `waitFor` to wait on one or more `cy.intercept` aliases set up by the caller.
 Cypress.Commands.add('sendPrompt', (promptText: string, options?: SendPromptOptions) => {
 	const timeout = options?.timeout ?? 120000;
+	const waitFor = options?.waitFor;
 
 	cy.get(CHAT_INPUT_SELECTOR, { timeout: 20000 }).filter(':visible').first().then(($input: JQuery<HTMLElement>) => {
 		const inputEl = $input[0] as HTMLElement;
@@ -99,10 +100,12 @@ Cypress.Commands.add('sendPrompt', (promptText: string, options?: SendPromptOpti
 			}
 		});
 	}).then(() => {
-		const aliases = ((Cypress as unknown) as { state: (k: string) => Record<string, unknown> | undefined }).state('aliases') || {};
-		if ((aliases as any).createChat || (aliases as any)['@createChat']) cy.wait('@createChat', { timeout });
-		if ((aliases as any).sendQuery || (aliases as any)['@sendQuery']) cy.wait('@sendQuery', { timeout });
-		if ((aliases as any).chatRequest || (aliases as any)['@chatRequest']) cy.wait('@chatRequest', { timeout });
+		if (!waitFor) return;
+		const aliases = Array.isArray(waitFor) ? waitFor : [waitFor];
+		aliases.forEach((alias) => {
+			const tag = alias.startsWith('@') ? alias : `@${alias}`;
+			cy.wait(tag, { timeout });
+		});
 	});
 });
 
