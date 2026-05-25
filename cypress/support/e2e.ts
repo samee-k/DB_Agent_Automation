@@ -9,8 +9,13 @@
 import './commands';
 import 'cypress-real-events';
 
-// Prevent uncaught application exceptions (e.g. malformed mock responses) from failing tests.
-// Tests still assert on UI state, so real regressions will surface through assertions.
-Cypress.on('uncaught:exception', (_err, _runnable) => {
-  return false;
+// Only suppress known-benign vendor/framework errors that do not affect test assertions.
+// All other uncaught exceptions will fail the test
+const KNOWN_BENIGN_ERRORS: string[] = [
+  // Example: 'ResizeObserver loop limit exceeded',
+];
+
+Cypress.on('uncaught:exception', (err) => {
+  if (KNOWN_BENIGN_ERRORS.some((msg) => err.message.includes(msg))) return false;
+  return true;
 });
