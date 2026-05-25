@@ -164,8 +164,9 @@ describe('Chat History — Panel', () => {
       page.typeInChatPrompt(`History creation validation ${Date.now()}`);
       page.clickSendButton();
 
-      // Wait briefly for the chat creation / query to complete.
-      cy.wait(5000);
+      // Wait on chat-creation an returns 200/201 on POST /api/chats, the new chat is guaranteed to be
+      // persisted and will appear when we re-fetch the list below.
+      cy.wait('@chatCreate', { timeout: 30000 }).its('response.statusCode').should('be.oneOf', [200, 201]);
 
       // Reload and re-open the panel to verify the new entry appears.
       interceptGetChats();
@@ -195,8 +196,8 @@ describe('Chat History — Panel', () => {
         page.typeInChatPrompt(`Preserve history validation ${Date.now()}`);
         page.clickSendButton();
 
-        // Wait briefly for the chat creation / query to complete.
-        cy.wait(5000);
+        // Wait on chat-creation ACK rather than a fixed sleep.
+        cy.wait('@chatCreate', { timeout: 30000 }).its('response.statusCode').should('be.oneOf', [200, 201]);
 
         // Reload and verify the previously-existing chat is still in the panel.
         interceptGetChats();
