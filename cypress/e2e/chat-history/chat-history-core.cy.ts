@@ -13,11 +13,20 @@ describe('Chat History — Core', () => {
   const page = new ChatHistoryPage();
   const INVALID_SESSION_ID = 'invalidURL';
 
-  // Clears chats via API then forces a page reload so the UI reflects the empty state.
+  const emptyChatListResponse = {
+    data: [],
+  };
+
+  // Forces the chat list request to return an empty payload so the UI reflects the empty state.
   const reloadAfterClear = (): void => {
-    cy.clearChatsByProjectViaApi();
-    interceptGetChats();
-    cy.reload();
+    const projectId = Cypress.env('projectId') || '11';
+
+    cy.intercept('GET', `**/api/chats/by-project/${projectId}*`, {
+      statusCode: 200,
+      body: emptyChatListResponse,
+    }).as(ALIASES.getChats);
+
+    page.visit();
     cy.wait(`@${ALIASES.getChats}`).its('response.statusCode').should('eq', 200);
   };
 
@@ -32,8 +41,10 @@ describe('Chat History — Core', () => {
     reloadAfterClear();
     page.openHistoryPanel();
 
-    // After clearing, the app may auto-create one fresh session on load.
-    page.getHistoryItemCount().should('be.lte', 1);
+    page.getHistoryItemCount().should('eq', 0);
+    page.getEmptyState()
+      .should('be.visible')
+      .and('contain.text', 'No Conversation History');
   });
 
   it('C698146 - Verify search returns "No Conversation History" when there are no chats.', () => {
