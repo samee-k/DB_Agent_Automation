@@ -52,7 +52,7 @@ Tests follow the Page Object Model pattern with centralized TypeScript types and
 | `TESTRAIL_API_KEY` | TestRail API key (My Settings → API Keys) |
 | `TESTRAIL_PROJECT_ID` | Numeric TestRail project ID |
 | `TESTRAIL_SUITE_ID` | Suite ID (required for multi-suite projects) |
-| `TESTRAIL_RUN_NAME` | Custom run name (defaults to `Cypress Run – <timestamp> UTC`) |
+| `TESTRAIL_RUN_NAME` | Custom run name (defaults to `Cypress Run – <timestamp> NTP`) |
 | `TESTRAIL_CLOSE_RUN` | Set to `"true"` to close the run after all specs finish |
 | `TESTRAIL_RUN_ID` | Post results into an existing run instead of creating a new one |
 
