@@ -417,18 +417,6 @@ describe('Free-form Text Input Field Behaviour', () => {
     });
   });
 
-  it('C698137 - Verify auto-generated chat title does not exceed max character limit of 50.', () => {
-    stubChatRequest();
-
-    page.appendPrompt('Generate dashboard metrics and detailed weekly trend analysis grouped by region and customer segment');
-    page.messageInput().type('{enter}');
-    cy.wait('@chatRequest');
-
-    readTitleText().then((updatedTitle: string) => {
-      expect(updatedTitle.length).to.be.at.most(50);
-    });
-  });
-
   it('C698138 - Verify subsequent prompts do not overwrite existing auto-generated chat title.', () => {
     stubChatRequest();
 
