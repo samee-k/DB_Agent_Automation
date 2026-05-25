@@ -57,13 +57,6 @@ export class UserPromptActionsPage {
   readonly charCountSelector = '.char-count';
   readonly maxCharLimit = 500;
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
-
-  loginOnceForSuite() {
-    cy.loginBySession();
-    return this;
-  }
-
   // ── Navigation ────────────────────────────────────────────────────────────
 
   openChatPage() {
@@ -165,7 +158,7 @@ export class UserPromptActionsPage {
       .invoke('attr', 'data-cy-active-user-message', 'true')
       .as(this.activeUserMessageAlias)
       .realHover();
-    cy.wait(400);
+    cy.wait(600);
     return this;
   }
 
@@ -230,7 +223,9 @@ export class UserPromptActionsPage {
   }
 
   clickEditIcon() {
-    this.getScopedActionIcon(this.editIconSelector, false).click({ force: true });
+    // requireVisible=true: wait until the icon is actually rendered before clicking,
+    // preventing clicks on icons still hidden by CSS hover transitions.
+    this.getScopedActionIcon(this.editIconSelector, true).click({ force: true });
     return this;
   }
 
