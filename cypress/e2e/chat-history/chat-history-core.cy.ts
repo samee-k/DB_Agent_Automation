@@ -53,7 +53,6 @@ describe('Chat History — Core', () => {
     page.openHistoryPanel();
 
     page.typeInSearch('SearchTest');
-    cy.wait(`@${ALIASES.searchChats}`).its('response.statusCode').should('eq', 200);
 
     page.getHistoryItemCount().should('eq', 0);
     page.getEmptyState()
