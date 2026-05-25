@@ -8,6 +8,7 @@ const browserNodeGlobals = {
   cy: 'readonly',
   Cypress: 'readonly',
   CypressCommandLine: 'readonly',
+  Mocha: 'readonly',
   expect: 'readonly',
   assert: 'readonly',
   JQuery: 'readonly',
