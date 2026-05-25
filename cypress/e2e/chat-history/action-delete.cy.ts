@@ -5,6 +5,7 @@ import {
   ALIASES,
   interceptDeleteChat,
   interceptGetChats,
+  seedAndVisit,
 } from '../../support/helpers/chat-history.helpers';
 
 describe('Chat History — Action (Delete)', () => {
@@ -13,7 +14,7 @@ describe('Chat History — Action (Delete)', () => {
   // TODO(QA-BACKEND): Replace API seeding with deterministic cleanup endpoint when available.
   beforeEach(() => {
     cy.loginBySession();
-    cy.visit(page.chatPath);
+    seedAndVisit(page);
   });
 
   it('C698115 - Verify that the user can delete a chat history item.', () => {
