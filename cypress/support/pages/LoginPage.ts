@@ -1,16 +1,13 @@
 /// <reference types="cypress" />
 
 import { ChainableEl } from '../types';
+import { LOGIN_BUTTON_SELECTOR } from '../selectors/CommonSelectors';
 
 export class LoginPage {
   private readonly logo = 'img[src*="aI-studio-logo"]';
   private readonly emailInput = '#email';
   private readonly passwordInput = '#password';
-  private readonly loginButton = [
-    '[data-cy="login-button"]',
-    'button[type="submit"]',
-    'button.btn.btn-primary.btn-lg',
-  ].join(', ');
+  private readonly loginButton = LOGIN_BUTTON_SELECTOR;
   private readonly toastMessage = '.toast__error .text-black';
   private readonly passwordToggle = '.pwd-block button, .password-toggle, [data-cy="toggle-password"]';
 

@@ -1,3 +1,5 @@
+/// <reference types="cypress" />
+
 // Selectors for chat messages (for robust message targeting in assertions)
 export const MESSAGE_SELECTORS = [
   '[data-testid*="message"]',
@@ -18,7 +20,6 @@ export const CHAT_TITLE_SELECTORS = [
   'h2',
 ] as const;
 export const CHAT_TITLE_SELECTOR = CHAT_TITLE_SELECTORS.join(', ');
-/// <reference types="cypress" />
 
 // Shared fallback selectors for the chat composer input used across page objects.
 export const CHAT_INPUT_SELECTORS = [
@@ -60,3 +61,13 @@ export const USER_MESSAGE_SELECTORS = [
 ] as const;
 
 export const USER_MESSAGE_SELECTOR = USER_MESSAGE_SELECTORS.join(', ');
+
+// Login form selectors — shared between LoginPage and auth.service so the
+// cy.session login flow stays in sync with the page object.
+export const LOGIN_BUTTON_SELECTORS = [
+  '[data-cy="login-button"]',
+  'button[type="submit"]',
+  'button.btn.btn-primary.btn-lg',
+] as const;
+
+export const LOGIN_BUTTON_SELECTOR = LOGIN_BUTTON_SELECTORS.join(', ');

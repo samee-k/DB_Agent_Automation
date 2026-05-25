@@ -1,6 +1,7 @@
 /// <reference types="cypress" />
 
 import { UsersFixture, Credentials } from '../types';
+import { LOGIN_BUTTON_SELECTOR } from '../selectors/CommonSelectors';
 
 function isPlaceholderCredential(value: string): boolean {
   return value.includes('__SET_VIA_CYPRESS_');
@@ -50,12 +51,14 @@ export function loginBySessionUi() {
       const credentials = resolveValidCredentials(users);
       cy.get('#email').type(credentials.email);
       cy.get('#password').type(credentials.password);
-      cy.get('button.btn.btn-primary.btn-lg > span').click();
+      cy.get(LOGIN_BUTTON_SELECTOR).filter(':visible').first().click();
       cy.url({ timeout: 30000 }).should('not.include', '/login');
     });
   }, {
     cacheAcrossSpecs: true,
-    validate: () => cy.window().its('localStorage.access_token').should('be.a', 'string').and.not.be.empty,
+    validate: () => {
+      cy.window().its('localStorage.access_token').should('be.a', 'string').and('not.be.empty');
+    },
   });
 
   stubBootstrapApis();
