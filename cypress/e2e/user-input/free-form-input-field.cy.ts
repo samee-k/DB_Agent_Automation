@@ -492,44 +492,57 @@ describe('Free-form Text Input Field Behaviour', () => {
     });
   });
 
-  it.skip('C679765 - should preserve typed content as a draft when navigating away and back', () => {
-    const draftText = 'SELECT * FROM users WHERE status = "active";';
-    const previousHistorySelector = [
-      '.chat-history-item',
-      '.chat-history-item.cursor-pointer',
-      '[class*="chat-history-item"]',
-    ].join(', ');
 
-    cy.visit(page.chatPath);
-    cy.contains(/Welcome to DB Agent/i, { timeout: 30000 }).should('be.visible');
-    page.clearPrompt();
-    page.appendPrompt(draftText);
-    page.inputValue().should('contain', draftText);
+  it('C787668 - Verify typed draft is preserved when switching between chat history sessions and returning', () => {
+  const HISTORY_PANEL = '[data-cy="chat-history-panel"], aside.chat-history';
+  const HISTORY_TOGGLE = '[data-cy="chat-history-toggle"], button.icon-btn-alt';
+  const HISTORY_ITEM = '[data-cy="chat-history-item"], .chat-history-item';
 
-    cy.location('href').then((chatUrl) => {
-      cy.get(previousHistorySelector)
-        .filter(':visible')
-          .first()
-        .should('exist')
-          .click({ force: true });
-
-      cy.location('href').should('not.eq', chatUrl);
+  const openHistoryPanel = () => {
+    cy.get('body').then(($body) => {
+      if (!$body.find(HISTORY_PANEL).is(':visible')) {
+        cy.get(HISTORY_TOGGLE).filter(':visible').first().click({ force: true });
+      }
     });
+    cy.get(HISTORY_PANEL, { timeout: 10000 }).should('be.visible');
+  };
 
-    cy.visit(page.chatPath);
-    cy.contains(/Welcome to DB Agent/i, { timeout: 30000 }).should('be.visible');
-    page.inputValue().should('contain', draftText);
+  const clickHistoryItem = (index: number) => {
+    openHistoryPanel();
+    cy.get(HISTORY_ITEM).eq(index).should('be.visible').click();
 
-    cy.location('href').then((chatUrl) => {
-      cy.contains('a[role="button"], .menu-item, a', /^Labs$/)
-        .first()
-        .click({ force: true });
+    // 🛑 CRITICAL: eslint-disable-next-line cypress/no-unnecessary-waiting
+    // Give the JS framework a moment to tear down the old textarea and 
+    // render the new one before Cypress tries to interact with it.
+    cy.wait(1000); 
 
-      cy.location('href').should('not.eq', chatUrl);
-    });
+    page.messageInput().should('be.visible');
+  };
 
-    cy.visit(page.chatPath);
-    cy.contains(/Welcome to DB Agent/i, { timeout: 30000 }).should('be.visible');
-    page.inputValue().should('contain', draftText);
+  // Verify at least 2 history sessions exist
+  openHistoryPanel();
+  cy.get(HISTORY_ITEM, { timeout: 10000 }).should('have.length.gte', 2);
+
+  // STEP 1: Click the BOTTOM chat (index 1) first to force a real switch.
+  clickHistoryItem(1);
+  page.clearPrompt();
+  page.appendPrompt('HI');
+  page.inputValue().should('contain', 'HI');
+
+  // STEP 2: Click the TOP chat (index 0).
+  // The wait() inside clickHistoryItem ensures we don't grab the old textarea
+  clickHistoryItem(0);
+  page.clearPrompt();
+  page.appendPrompt('HELLO');
+  page.inputValue().should('contain', 'HELLO');
+
+  // STEP 3: Return to BOTTOM chat (index 1).
+  clickHistoryItem(1);
+  page.inputValue().should('contain', 'HI');
+
+  // STEP 4: Return to TOP chat (index 0).
+  clickHistoryItem(0);
+  page.inputValue().should('contain', 'HELLO');
   });
+
 });
