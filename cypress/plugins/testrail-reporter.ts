@@ -110,6 +110,16 @@ function extractCaseIds(title: string): number[] {
   return (title.match(/\bC(\d+)\b/g) ?? []).map((m) => parseInt(m.slice(1), 10));
 }
 
+function formatScreenshotComment(screenshots: CypressCommandLine.RunResult['screenshots']): string {
+  const paths = Array.from(new Set((screenshots ?? []).map((screenshot) => screenshot.path).filter(Boolean)));
+
+  if (paths.length === 0) {
+    return '';
+  }
+
+  return `\n\nScreenshot${paths.length > 1 ? 's' : ''}:\n${paths.map((path) => `- ${path}`).join('\n')}`;
+}
+
 async function apiRequest<T>(method: 'GET' | 'POST', endpoint: string, body?: object): Promise<T> {
   if (!cfg) throw new Error('[TestRail] config not initialised');
   const credentials = Buffer.from(`${cfg.username}:${cfg.apiKey}`).toString('base64');
@@ -126,8 +136,10 @@ async function apiRequest<T>(method: 'GET' | 'POST', endpoint: string, body?: ob
   return response.json() as Promise<T>;
 }
 
-function buildResults(tests: CypressTest[]): TestRailResult[] {
+function buildResults(tests: CypressTest[], screenshots: CypressCommandLine.RunResult['screenshots']): TestRailResult[] {
   const results: TestRailResult[] = [];
+  const screenshotComment = formatScreenshotComment(screenshots);
+
   for (const test of tests) {
     const caseIds = extractCaseIds(test.title.join(' '));
     if (caseIds.length === 0) continue;
@@ -135,7 +147,7 @@ function buildResults(tests: CypressTest[]): TestRailResult[] {
     const elapsed  = `${Math.max(1, Math.ceil((test.attempts?.[0]?.duration ?? 0) / 1000))}s`;
     const comment  =
       test.state === 'failed' && test.displayError
-        ? `FAILED\n\n${test.displayError}`
+        ? `FAILED\n\n${test.displayError}${screenshotComment}`
         : `Cypress automated test – ${test.state}`;
     for (const caseId of caseIds) {
       results.push({ case_id: caseId, status_id: statusId, comment, elapsed });
@@ -211,7 +223,7 @@ export async function onAfterSpec(
   if (!isEnabled() || !cfg || runId === null) return;
 
   const tests = (results.tests ?? []) as CypressTest[];
-  const specResults = buildResults(tests);
+  const specResults = buildResults(tests, results.screenshots ?? []);
 
   if (specResults.length === 0) {
     console.log(`[TestRail] ${spec.relative} — no C<id> case IDs, skipping.`);
