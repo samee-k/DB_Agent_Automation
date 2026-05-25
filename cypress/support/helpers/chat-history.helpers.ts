@@ -17,9 +17,21 @@ export const ALIASES = {
 // ---------------------------------------------------------------------------
 // Intercept helpers — register network intercepts and attach aliases.
 // ---------------------------------------------------------------------------
-export function interceptGetChats(): void {
+export function interceptGetChats(responseBody?: unknown | (() => unknown)): void {
   const projectId = Cypress.env('projectId') || '11';
-  cy.intercept('GET', `**/api/chats/by-project/${projectId}*`).as(ALIASES.getChats);
+
+  if (typeof responseBody === 'undefined') {
+    cy.intercept('GET', `**/api/chats/by-project/${projectId}*`).as(ALIASES.getChats);
+    return;
+  }
+
+  cy.intercept('GET', `**/api/chats/by-project/${projectId}*`, (req) => {
+    const body = typeof responseBody === 'function' ? responseBody() : responseBody;
+    req.reply({
+      statusCode: 200,
+      body,
+    });
+  }).as(ALIASES.getChats);
 }
 
 export function interceptSearchChats(): void {
@@ -27,7 +39,15 @@ export function interceptSearchChats(): void {
   cy.intercept('GET', `**/api/chats/by-project/${projectId}?search=*`).as(ALIASES.searchChats);
 }
 
-export function interceptDeleteChat(): void {
+export function interceptDeleteChat(onDelete?: () => void): void {
+  if (typeof onDelete === 'function') {
+    cy.intercept('DELETE', '**/api/chats/*', (req) => {
+      onDelete();
+      req.reply({ statusCode: 200, body: {} });
+    }).as(ALIASES.deleteChat);
+    return;
+  }
+
   cy.intercept('DELETE', '**/api/chats/*').as(ALIASES.deleteChat);
 }
 
@@ -202,3 +222,5 @@ export function assertNoSessionIdInUrl(page: ChatHistoryPage): void {
     expect(params.get('sessionId')).to.be.null;
   });
 }
+
+export { Chat };
