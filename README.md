@@ -69,14 +69,14 @@ npm run test:chrome                                               # Chrome
 npm run test:firefox                                              # Firefox
 
 # Specific spec
-npm run cy:run:spec -- --spec "cypress/e2e/auth/login.cy.ts"
+npm run cy:run:spec --spec "cypress/e2e/auth/login.cy.ts"
 
 # Regression suite
 npm run test:regression
 
 # With TestRail reporting
 npm run test:testrail
-npm run test:testrail:spec -- --spec "cypress/e2e/regression/regression.cy.ts"
+npm run test:testrail:spec --spec "cypress/e2e/regression/regression.cy.ts"
 
 ```
 
