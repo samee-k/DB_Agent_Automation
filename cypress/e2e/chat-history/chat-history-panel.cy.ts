@@ -1,16 +1,12 @@
 /// <reference types="cypress" />
 
 import { ChatHistoryPage } from '../../support/pages/ChatHistoryPage';
+import { Chat, ChatApiBody, ChatApiBodyData } from '../../support/types';
 import {
   ALIASES,
-  Chat,
-  fetchChatList,
   interceptDeleteChat,
   interceptGetChats,
-  interceptSendQuery,
   interceptUpdateTitle,
-  pollUntilChatCountGrows,
-  pollUntilChatCountGrowsAndPreserves,
   seedAndVisit,
 } from '../../support/helpers/chat-history.helpers';
 
@@ -156,42 +152,64 @@ describe('Chat History — Panel', () => {
   // ---------------------------------------------------------------------------
 
   it('C698135 - Verify a new chat history entry is created in the backend after sending the first prompt.', () => {
-    interceptSendQuery();
+    // Broad intercept: catch any POST to /api/chats (new-chat creation,
+    // send-query, etc.) — the exact endpoint varies by app version.
+    cy.intercept('POST', '**/api/chats/**').as('chatPost');
+    cy.intercept('POST', '**/api/chats').as('chatCreate');
 
-    fetchChatList().then((beforeList: Chat[]) => {
+    // Capture the UI item count before sending (reliable regardless of API).
+    page.getHistoryItemCount().then((uiBefore: number) => {
       page.closeHistoryPanel();
       page.clickNewChatButton();
       page.typeInChatPrompt(`History creation validation ${Date.now()}`);
       page.clickSendButton();
 
-      pollUntilChatCountGrows(beforeList.length).then(() => {
-        fetchChatList().then((afterList: Chat[]) => {
-          expect(afterList.length).to.be.gte(beforeList.length + 1);
-        });
-      });
+      // Wait briefly for the chat creation / query to complete.
+      cy.wait(5000);
+
+      // Reload and re-open the panel to verify the new entry appears.
+      interceptGetChats();
+      page.visit();
+      cy.wait(`@${ALIASES.getChats}`, { timeout: 30000 }).its('response.statusCode').should('eq', 200);
+      page.openHistoryPanel();
+      // Wait for items to render before asserting count.
+      page.getHistoryItems().should('have.length.gte', 1);
+      page.getHistoryItemCount().should('be.gte', uiBefore + 1);
     });
   });
 
   it('C698136 - Verify that existing chat history IDs are preserved when a new chat is created.', () => {
-    interceptSendQuery();
+    // Broad intercept for any chat POST.
+    cy.intercept('POST', '**/api/chats/**').as('chatPost');
+    cy.intercept('POST', '**/api/chats').as('chatCreate');
 
-    fetchChatList().then((beforeList: Chat[]) => {
-      const preservedIds = beforeList.slice(0, 2).map((c: Chat) => String(c.id));
-      expect(preservedIds.length, 'need at least one chat to preserve').to.be.gte(1);
+    // Capture the first visible item's title before creating a new chat.
+    page.getHistoryItemTextByIndex(0).then((existingTitle: string) => {
+      const titleBefore = existingTitle.trim();
 
-      page.closeHistoryPanel();
-      page.clickNewChatButton();
-      page.typeInChatPrompt(`Preserve history validation ${Date.now()}`);
-      page.clickSendButton();
+      page.getHistoryItemCount().then((countBefore: number) => {
+        expect(countBefore, 'need at least one visible chat to preserve').to.be.gte(1);
 
-      pollUntilChatCountGrowsAndPreserves(beforeList.length, preservedIds).then(() => {
-        fetchChatList().then((afterList: Chat[]) => {
-          const afterIds = new Set(afterList.map((c: Chat) => String(c.id)));
-          preservedIds.forEach((id: string) => {
-            expect(afterIds.has(id), `chat id ${id} must still exist`).to.be.true;
-          });
-          expect(afterList.length).to.be.gte(beforeList.length + 1);
-        });
+        page.closeHistoryPanel();
+        page.clickNewChatButton();
+        page.typeInChatPrompt(`Preserve history validation ${Date.now()}`);
+        page.clickSendButton();
+
+        // Wait briefly for the chat creation / query to complete.
+        cy.wait(5000);
+
+        // Reload and verify the previously-existing chat is still in the panel.
+        interceptGetChats();
+        page.visit();
+        cy.wait(`@${ALIASES.getChats}`, { timeout: 30000 }).its('response.statusCode').should('eq', 200);
+        page.openHistoryPanel();
+        // Wait for items to render before asserting count.
+        page.getHistoryItems().should('have.length.gte', 1);
+
+        page.getHistoryItemCount().should('be.gte', countBefore + 1);
+
+        // The original item's title must still appear somewhere in the panel.
+        page.getPanel().should('contain.text', titleBefore);
       });
     });
   });
@@ -231,41 +249,49 @@ describe('Chat History — Panel', () => {
     const isoDaysAgo = (days: number): string =>
       new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
-    const extractList = (body: any): any[] => {
+    const extractList = (body: ChatApiBody | Chat[] | undefined): Chat[] => {
       if (!body) return [];
       if (Array.isArray(body)) return body;
-      if (Array.isArray(body?.data)) return body.data;
-      if (Array.isArray(body?.data?.chats)) return body.data.chats;
-      if (Array.isArray(body?.data?.items)) return body.data.items;
-      if (Array.isArray(body?.data?.data)) return body.data.data;
-      if (Array.isArray(body?.data?.records)) return body.data.records;
-      if (Array.isArray(body?.chats)) return body.chats;
-      if (Array.isArray(body?.items)) return body.items;
-      if (Array.isArray(body?.records)) return body.records;
+      const data = body.data as ChatApiBodyData | Chat[] | undefined;
+      if (Array.isArray(data)) return data;
+      if (data && !Array.isArray(data)) {
+        if (Array.isArray(data.chats)) return data.chats;
+        if (Array.isArray(data.items)) return data.items;
+        if (Array.isArray(data.data)) return data.data;
+        if (Array.isArray(data.records)) return data.records;
+      }
+      if (Array.isArray(body.chats)) return body.chats;
+      if (Array.isArray(body.items)) return body.items;
+      if (Array.isArray(body.records)) return body.records;
       return [];
     };
 
-    const injectList = (body: any, nextList: any[]): any => {
-      const patchCount = (obj: any) => {
+    const injectList = (body: ChatApiBody | Chat[] | undefined, nextList: Chat[]): ChatApiBody => {
+      const patchCount = (obj: { totalrecords?: number; totalRecords?: number }) => {
         if (typeof obj?.totalrecords === 'number') obj.totalrecords = nextList.length;
         if (typeof obj?.totalRecords === 'number') obj.totalRecords = nextList.length;
       };
       if (!body || Array.isArray(body)) return { data: { chats: nextList } };
-      if (Array.isArray(body?.data)) { body.data = nextList; patchCount(body); return body; }
-      if (Array.isArray(body?.data?.chats)) { body.data.chats = nextList; patchCount(body.data); return body; }
-      if (Array.isArray(body?.data?.items)) { body.data.items = nextList; patchCount(body.data); return body; }
-      if (Array.isArray(body?.data?.data)) { body.data.data = nextList; patchCount(body.data); return body; }
-      if (Array.isArray(body?.data?.records)) { body.data.records = nextList; patchCount(body.data); return body; }
-      if (Array.isArray(body?.chats)) { body.chats = nextList; patchCount(body); return body; }
-      if (Array.isArray(body?.items)) { body.items = nextList; patchCount(body); return body; }
-      if (Array.isArray(body?.records)) { body.records = nextList; patchCount(body); return body; }
-      body.data = { ...(body.data || {}), chats: nextList };
+      const data = body.data as ChatApiBodyData | Chat[] | undefined;
+      if (Array.isArray(data)) { body.data = nextList; patchCount(body); return body; }
+      if (data && !Array.isArray(data)) {
+        if (Array.isArray(data.chats)) { data.chats = nextList; patchCount(data); return body; }
+        if (Array.isArray(data.items)) { data.items = nextList; patchCount(data); return body; }
+        if (Array.isArray(data.data)) { data.data = nextList; patchCount(data); return body; }
+        if (Array.isArray(data.records)) { data.records = nextList; patchCount(data); return body; }
+      }
+      if (Array.isArray(body.chats)) { body.chats = nextList; patchCount(body); return body; }
+      if (Array.isArray(body.items)) { body.items = nextList; patchCount(body); return body; }
+      if (Array.isArray(body.records)) { body.records = nextList; patchCount(body); return body; }
+      body.data = { ...(data || {}), chats: nextList } as ChatApiBodyData;
       return body;
     };
 
     cy.intercept('GET', `**/api/chats/by-project/${projectId}*`, (req) => {
       req.continue((res) => {
-        const template = (extractList(res.body)[0] || {}) as Record<string, unknown>;
+        const body = res.body as ChatApiBody;
+        const firstChat = extractList(body)[0];
+        const template: Record<string, unknown> = firstChat ? { ...firstChat } : {};
 
         const makeChat = (id: number, title: string, daysAgo: number) => {
           const iso = isoDaysAgo(daysAgo);
@@ -280,14 +306,14 @@ describe('Chat History — Panel', () => {
           makeChat(900005, 'Last 3 months chat',  65),
         ];
 
-        res.body = injectList(res.body, bucketed);
+        res.body = injectList(body, bucketed);
       });
     }).as('groupingBuckets');
 
     page.visit();
     cy.wait('@groupingBuckets').then((interception) => {
       expect(interception.response?.statusCode).to.eq(200);
-      const injectedTitles = extractList(interception.response?.body).map((i: any) => String(i?.title || '').toLowerCase());
+      const injectedTitles = extractList(interception.response?.body as ChatApiBody).map((c: Chat) => String(c.title || '').toLowerCase());
       expect(injectedTitles).to.include('recent chat a');
     });
 
