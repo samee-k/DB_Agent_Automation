@@ -200,7 +200,7 @@ export class UserPromptActionsPage {
   }
 
   assertCopyConfirmation() {
-    cy.get('body').then(($body: JQuery<HTMLElement>) => {
+    cy.get('body').should(($body: JQuery<HTMLElement>) => {
       const hasCopiedText = /copied/i.test($body.text());
       const hasToast = $body.find('[class*="toast"], [class*="snack"], [role="status"], [role="alert"]').filter(':visible').length > 0;
       const copyIconChangedLabel = $body.find('[aria-label*="copied"], [aria-label*="Copied"]').length > 0;
@@ -230,7 +230,7 @@ export class UserPromptActionsPage {
   }
 
   clearAndTypeInEditArea(newText: string) {
-    this.getEditTextarea().clear().type(newText, { delay: 0 });
+    this.getEditTextarea().type(`{selectall}{backspace}${newText}`, { delay: 0, force: true });
     return this;
   }
 
