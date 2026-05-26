@@ -185,7 +185,7 @@ describe('User Prompt Actions - Copy and Edit', () => {
       page.clickEditIcon();
       page.assertEditAreaVisible();
 
-      page.getEditTextarea().clear().type(overLimitText, { delay: 0 });
+      page.getEditTextarea().type(`{selectall}{backspace}${overLimitText}`, { delay: 0, force: true });
 
       // Validation can surface as truncation, message, counter overflow, or disabled send.
       page.getEditAreaCharCount().then((count: number) => {
@@ -258,7 +258,7 @@ describe('User Prompt Actions - Copy and Edit', () => {
 
       // Fill to limit then try inserting at a mid position.
       const fullText = 'a'.repeat(page.maxCharLimit);
-      page.getEditTextarea().clear().type(fullText, { delay: 0 });
+      page.getEditTextarea().type(`{selectall}{backspace}${fullText}`, { delay: 0, force: true });
 
       const mid = 120;
 
