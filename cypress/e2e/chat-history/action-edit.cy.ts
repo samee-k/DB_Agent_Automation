@@ -225,9 +225,13 @@ describe('Chat History — Action (Edit)', () => {
             cy.location('pathname').should('eq', pathBefore);
             page.getHistoryItems().its('length').should('eq', initialCount);
 
-            page.getAllHistoryItemTexts().then((titles: string[]) => {
-              expect(titles.length).to.be.greaterThan(0);
-              expect(titles[0], 'edited chat should bubble to the top').to.eq(uniqueTitle);
+            // .should() retries the callback until pass or defaultCommandTimeout.
+            // After the updateTitle API returns 200, the app re-sorts the panel
+            // on a separate paint frame — a single .then() snapshot races it.
+            page.getHistoryItems().first().should(($el: JQuery<HTMLElement>) => {
+              expect(($el.text() || '').trim(), 'edited chat should bubble to the top').to.eq(uniqueTitle);
+            });
+            page.getAllHistoryItemTexts().should((titles: string[]) => {
               expect(titles.filter((t: string) => t === uniqueTitle).length, 'title appears exactly once').to.eq(1);
             });
           });
