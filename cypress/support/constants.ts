@@ -22,7 +22,7 @@ export const TIMEOUTS = {
   /** Chat list / panel rendering after seed. */
   apiSlow: 60000,
   /** Real LLM send-query response. Deployments vary widely; keep generous. */
-  llmResponse: 180000,
+  llmResponse: 30000,
   /** Stubbed send-query response (synthetic 200 from llm-stubs). */
   llmStub: 5000,
 } as const;

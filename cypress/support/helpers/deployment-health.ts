@@ -26,7 +26,7 @@ import { CHAT_INPUT_SELECTOR } from '../selectors/CommonSelectors';
 // ---------------------------------------------------------------------------
 
 const PROBE_PROMPT = 'health-check ping';
-const PROBE_RESPONSE_TIMEOUT_MS = 45000;
+const PROBE_RESPONSE_TIMEOUT_MS = 15000;
 const POLL_INTERVAL_MS = 500;
 const PROBE_ALIAS = 'llmHealthProbeSendQuery';
 
