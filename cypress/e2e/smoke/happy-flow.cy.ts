@@ -57,6 +57,15 @@ describe('Happy Flow — Smoke', () => {
       expect(email, 'USER_EMAIL must be set').to.not.equal('');
       expect(password, 'USER_PASSWORD must be set').to.not.equal('');
 
+      // This test specifically exercises *fresh* login. If auth/login.cy.ts ran
+      // earlier in the same `cypress run`, cy.loginBySession (cacheAcrossSpecs:
+      // true) has cached the session — visiting /login then redirects the
+      // already-authenticated user to /chat, where the login logo doesn't exist.
+      Cypress.session.clearAllSavedSessions();
+      cy.clearAllCookies();
+      cy.clearAllLocalStorage();
+      cy.clearAllSessionStorage();
+
       loginPage.visitPage();
       loginPage.getLogo().should('be.visible');
 
