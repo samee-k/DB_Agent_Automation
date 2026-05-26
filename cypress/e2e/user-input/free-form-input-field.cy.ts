@@ -46,10 +46,17 @@ describe('Free-form Text Input Field Behaviour', () => {
     // means the suite stays green when the deployment is slow or down.
     cy.intercept('POST', '**/api/chats/*/send-query', (req) => {
       chatRequestCount++;
-      req.reply({ statusCode: 200, body: { data: { id: 'stub', response: 'stubbed' } } });
+      req.reply({
+        statusCode: 200,
+        body: { data: { id: 'stub', sessionId: 'stub-session-id', response: 'stubbed', chats: [] } },
+      });
     }).as('chatRequest');
     // Also intercept chat creation so first-prompt tests still pass
     cy.intercept('POST', /\/api\/chats(?:\?.*)?$/).as('chatCreate');
+    cy.intercept('GET', '**/api/chats/**', (req) => {
+      if (req.url.includes('/by-project/')) return;
+      req.reply({ statusCode: 200, body: { data: { id: 'stub', messages: [], chats: [] } } });
+    });
   };
 
   const submitWithEnter = (promptText: string) => {
