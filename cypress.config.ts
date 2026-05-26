@@ -26,7 +26,7 @@ export default defineConfig({
     viewportHeight: 720,
     defaultCommandTimeout: 20000,
     requestTimeout: 30000,
-    responseTimeout: 120000,
+    responseTimeout: 30000,
     env: {
       USER_EMAIL: process.env.CYPRESS_USER_EMAIL || process.env.USER_EMAIL || '',
       USER_PASSWORD: process.env.CYPRESS_USER_PASSWORD || process.env.USER_PASSWORD || '',
@@ -62,6 +62,14 @@ export default defineConfig({
             fs.writeFileSync(LLM_HEALTH_CACHE_PATH, JSON.stringify(payload), 'utf8');
           } catch {
             // Caching is best-effort — probe will simply re-run next spec.
+          }
+          return null;
+        },
+        'llmHealth:clear'(): null {
+          try {
+            fs.unlinkSync(LLM_HEALTH_CACHE_PATH);
+          } catch {
+            // No cache yet — nothing to clean up.
           }
           return null;
         },
