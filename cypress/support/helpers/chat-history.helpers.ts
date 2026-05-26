@@ -115,7 +115,7 @@ export function fetchChatList(): Cypress.Chainable<Chat[]> {
 
   return cy.window().then((win: Window) => {
     const accessToken = win.localStorage.getItem('access_token') || '';
-    expect(accessToken, 'access_token must be present for API call').to.be.a('string').and('not.be.empty');
+    expect(accessToken, 'access_token must be present for API call').to.be.a('string').and.not.be.empty;
 
     return cy.request({
       method: 'GET',
